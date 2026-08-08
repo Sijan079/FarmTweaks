@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "farmtweaks:item/seed_bag_closed"
+  }
+}

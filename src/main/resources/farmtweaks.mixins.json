@@ -1,0 +1,12 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.sncial.farmtweaks.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "FarmBlockHydrationMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

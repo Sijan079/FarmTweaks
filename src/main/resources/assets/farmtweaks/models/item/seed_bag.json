@@ -1,0 +1,14 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "farmtweaks:item/seed_bag_open"
+  },
+  "overrides": [
+    {
+      "predicate": {
+        "farmtweaks:seed_bag_full": 1.0
+      },
+      "model": "farmtweaks:item/seed_bag_closed"
+    }
+  ]
+}

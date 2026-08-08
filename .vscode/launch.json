@@ -1,0 +1,93 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "java",
+      "request": "launch",
+      "name": "Client",
+      "presentation": {
+        "group": "Mod Development - FarmTweaks",
+        "order": 0
+      },
+      "projectName": "FarmTweaks",
+      "mainClass": "net.neoforged.devlaunch.Main",
+      "args": [
+        "@C:\\projects\\sndev_minecraft_mods\\FarmTweaks\\build\\moddev\\clientRunProgramArgs.txt"
+      ],
+      "vmArgs": [
+        "@C:\\projects\\sndev_minecraft_mods\\FarmTweaks\\build\\moddev\\clientRunVmArgs.txt",
+        "-Dfml.modFolders\u003dfarmtweaks%%C:\\projects\\sndev_minecraft_mods\\FarmTweaks\\bin\\main"
+      ],
+      "cwd": "${workspaceFolder}\\run",
+      "env": {},
+      "console": "internalConsole",
+      "shortenCommandLine": "none"
+    },
+    {
+      "type": "java",
+      "request": "launch",
+      "name": "Data",
+      "presentation": {
+        "group": "Mod Development - FarmTweaks",
+        "order": 1
+      },
+      "projectName": "FarmTweaks",
+      "mainClass": "net.neoforged.devlaunch.Main",
+      "args": [
+        "@C:\\projects\\sndev_minecraft_mods\\FarmTweaks\\build\\moddev\\dataRunProgramArgs.txt"
+      ],
+      "vmArgs": [
+        "@C:\\projects\\sndev_minecraft_mods\\FarmTweaks\\build\\moddev\\dataRunVmArgs.txt",
+        "-Dfml.modFolders\u003dfarmtweaks%%C:\\projects\\sndev_minecraft_mods\\FarmTweaks\\bin\\main"
+      ],
+      "cwd": "${workspaceFolder}\\run",
+      "env": {},
+      "console": "internalConsole",
+      "shortenCommandLine": "none"
+    },
+    {
+      "type": "java",
+      "request": "launch",
+      "name": "GameTestServer",
+      "presentation": {
+        "group": "Mod Development - FarmTweaks",
+        "order": 2
+      },
+      "projectName": "FarmTweaks",
+      "mainClass": "net.neoforged.devlaunch.Main",
+      "args": [
+        "@C:\\projects\\sndev_minecraft_mods\\FarmTweaks\\build\\moddev\\gameTestServerRunProgramArgs.txt"
+      ],
+      "vmArgs": [
+        "@C:\\projects\\sndev_minecraft_mods\\FarmTweaks\\build\\moddev\\gameTestServerRunVmArgs.txt",
+        "-Dfml.modFolders\u003dfarmtweaks%%C:\\projects\\sndev_minecraft_mods\\FarmTweaks\\bin\\main"
+      ],
+      "cwd": "${workspaceFolder}\\run",
+      "env": {},
+      "console": "internalConsole",
+      "shortenCommandLine": "none"
+    },
+    {
+      "type": "java",
+      "request": "launch",
+      "name": "Server",
+      "presentation": {
+        "group": "Mod Development - FarmTweaks",
+        "order": 3
+      },
+      "projectName": "FarmTweaks",
+      "mainClass": "net.neoforged.devlaunch.Main",
+      "args": [
+        "@C:\\projects\\sndev_minecraft_mods\\FarmTweaks\\build\\moddev\\serverRunProgramArgs.txt"
+      ],
+      "vmArgs": [
+        "@C:\\projects\\sndev_minecraft_mods\\FarmTweaks\\build\\moddev\\serverRunVmArgs.txt",
+        "-Dfml.modFolders\u003dfarmtweaks%%C:\\projects\\sndev_minecraft_mods\\FarmTweaks\\bin\\main"
+      ],
+      "cwd": "${workspaceFolder}\\run",
+      "env": {},
+      "console": "internalConsole",
+      "shortenCommandLine": "none"
+    }
+  ]
+}
