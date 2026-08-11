@@ -3,41 +3,61 @@
 
 FarmTweaks is a NeoForge mod for Minecraft **1.21.1** that adds a handful of quality-of-life farming improvements: faster harvesting and tilling, optional Fortune-style crop bonuses, small XP rewards, and a Seed Bag for planting workflows.
 
-## Features
+## Implementation progress
 
-### Right-click Harvest (with auto-replant)
+**Current feature set: 9 / 9 implemented — 100%**
+
+`[████████████████████] 9 / 9`
+
+This tracker covers the player-facing features currently shipped by FarmTweaks. Items in the [roadmap](#roadmap) are deliberately excluded until they are implemented.
+
+| Status | Feature |
+| --- | --- |
+| ✅ | Right-click harvest with auto-replant |
+| ✅ | Fortune-affected crop drops |
+| ✅ | AoE harvest |
+| ✅ | AoE tilling |
+| ✅ | Crop XP rewards |
+| ✅ | Serene Seasons compatibility |
+| ✅ | Seed Bag |
+| ✅ | Tool tag tweaks |
+| ✅ | Custom water hydration range |
+
+## Implemented features
+
+### ✅ Right-click Harvest (with auto-replant)
 - Right-click fully-grown crops to harvest them and reset the crop to its initial growth stage.
 - Works for vanilla `CropBlock` crops and (optionally) modded crops that use an integer `age` property.
 - If the crop/block has its own `useWithoutItem` right-click behavior, FarmTweaks will prefer letting the block handle it.
 
-### Fortune-Affected Crop Drops (hoes)
+### ✅ Fortune-Affected Crop Drops (hoes)
 - When using a hoe with **Fortune**, FarmTweaks adds a Fortune-style bonus to *non-seed* drops from "wheat-like" crops.
 - Seed-like drops are excluded using the `farmtweaks:seedlike` item tag.
 
-### AoE Harvest (hoes)
+### ✅ AoE Harvest (hoes)
 - Using a hoe enables optional AoE harvesting: FarmTweaks flood-fills to nearby crop blocks and harvests up to a configurable maximum.
 - AoE scaling is based on **Efficiency**:
   `maxHarvest = 1 + (Efficiency level * aoeHarvestCountStep)` (clamped to 1..256)
 - Sneaking disables AoE (single-block harvest only).
 
-### AoE Tilling (hoes)
+### ✅ AoE Tilling (hoes)
 - Right-click dirt/grass/path with a hoe to convert blocks to farmland.
 - AoE tilling flood-fills through nearby tillable blocks up to a configurable maximum.
 - AoE scaling is based on **Efficiency**:
   `maxTill = 1 + (Efficiency level * aoeTillingCountStep)` (clamped to 1..256)
 - Sneaking disables AoE (single-block till only).
 
-### Crop XP Rewards
+### ✅ Crop XP Rewards
 - Optionally spawns XP orbs when harvesting mature crops.
 - Controlled by `xpPerCrop` (set `cropXpRewards=false` to disable regardless of value).
 
-### Serene Seasons Compatibility
+### ✅ Serene Seasons Compatibility
 - Optional Serene Seasons integration for version **1.21.1-10.1.0.3**.
 - When enabled, FarmTweaks' extra Fortune crop bonus only applies to crops Serene Seasons considers in-season/fertile.
 - Optional in-season XP boost adds extra XP on top of `xpPerCrop`.
 - If Serene Seasons is not installed, FarmTweaks falls back to normal behavior.
 
-### Seed Bag
+### ✅ Seed Bag
 - Craftable Seed Bag that stores up to **640** of a single seed type (10 stacks).
 - Right-click (in air) deposits matching seeds from your inventory into the bag.
 - Right-click a block to plant seeds using the stored seed type.
@@ -49,10 +69,10 @@ FarmTweaks is a NeoForge mod for Minecraft **1.21.1** that adds a handful of qua
   - Anything in the `c:seeds` tag.
   - Plus anything in `farmtweaks:seed_bag_plantables` (defaults include carrots and potatoes).
 
-### Tool Tag Tweaks
+### ✅ Tool Tag Tweaks
 - Moves **pumpkin** and **melon** into `minecraft:mineable/hoe` (and removes them from `mineable/axe`).
 
-### Custom Water Hydration Range
+### ✅ Custom Water Hydration Range
 - Optional configurable farmland hydration range for water.
 - Uses the same water-fluid hydration check as vanilla, so normal water and waterlogged blocks can count.
 - Waterlogged blocks can be disabled separately.
@@ -121,16 +141,18 @@ restored.
 If your IDE is missing dependencies, try:
 - `./gradlew --refresh-dependencies`
 
-## Future Plans / Integrations
+## Roadmap
 
-- Mouse Tweaks integration: allow Seed Bag quick in/out transfer while dragging items with RMB held.
-- WD's Selling Bin integration: right-click the selling bin to dump Seed Bag contents and apply correct point/count logic.
-- Little Joys integration: when harvesting (by hand or by hoe), trigger/apply Little Joys harvest-event chances as appropriate.
-- Seed Bag planting mode switcher:
-  - Square planting mode.
-  - Radial planting mode.
-  - Point-to-point planting mode.
-  - Switch modes with the mouse scroll wheel while the Seed Bag is held.
-- Custom Pumpkin Slice drops when breaking Pumpkin Blocks, similar to Melon Blocks.
-  - Automatically detect Farmers' Delight when installed.
-  - Use Farmers' Delight's Pumpkin Slice item instead of FarmTweaks' item when available.
+The following items are not yet implemented and are not included in the progress bar above.
+
+- [ ] Mouse Tweaks integration: allow Seed Bag quick in/out transfer while dragging items with RMB held.
+- [ ] WD's Selling Bin integration: right-click the selling bin to dump Seed Bag contents and apply correct point/count logic.
+- [ ] Little Joys integration: when harvesting (by hand or by hoe), trigger/apply Little Joys harvest-event chances as appropriate.
+- [ ] Seed Bag planting mode switcher:
+  - [ ] Square planting mode.
+  - [ ] Radial planting mode.
+  - [ ] Point-to-point planting mode.
+  - [ ] Switch modes with the mouse scroll wheel while the Seed Bag is held.
+- [ ] Custom Pumpkin Slice drops when breaking Pumpkin Blocks, similar to Melon Blocks.
+  - [ ] Automatically detect Farmers' Delight when installed.
+  - [ ] Use Farmers' Delight's Pumpkin Slice item instead of FarmTweaks' item when available.
