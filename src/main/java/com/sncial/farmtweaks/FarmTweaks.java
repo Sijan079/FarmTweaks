@@ -9,7 +9,6 @@ import java.util.Collection;
 
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -42,14 +41,13 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
-import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.fml.config.ModConfig;
+import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.neoforge.common.CommonHooks;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.common.util.BlockSnapshot;
 import net.neoforged.neoforge.event.EventHooks;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
-import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
@@ -58,11 +56,6 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 public class FarmTweaks {
     public static final String MODID = "farmtweaks";
     public static final Logger LOGGER = LogUtils.getLogger();
-
-    private static final TagKey<Block> RIGHT_CLICK_HARVESTABLE = TagKey.create(
-            Registries.BLOCK,
-            ResourceLocation.fromNamespaceAndPath(MODID, "right_click_harvestable")
-    );
 
     private static final TagKey<Item> SEEDLIKE_ITEMS = TagKey.create(
             Registries.ITEM,
@@ -73,7 +66,9 @@ public class FarmTweaks {
     public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(MODID);
     public static final DeferredRegister<CreativeModeTab> CREATIVE_MODE_TABS = DeferredRegister.create(Registries.CREATIVE_MODE_TAB, MODID);
 
-    public static final DeferredItem<Item> SEED_BAG = ITEMS.register("seed_bag", () -> new SeedBagItem(new Item.Properties().stacksTo(1)));
+    public static final DeferredItem<SeedBagItem> SEED_BAG = ITEMS.register("seed_bag", () -> new SeedBagItem(SeedBagTier.BASIC, new Item.Properties().stacksTo(1)));
+    public static final DeferredItem<SeedBagItem> GOLD_SEED_BAG = ITEMS.register("gold_seed_bag", () -> new SeedBagItem(SeedBagTier.GOLD, new Item.Properties().stacksTo(1)));
+    public static final DeferredItem<SeedBagItem> DIAMOND_SEED_BAG = ITEMS.register("diamond_seed_bag", () -> new SeedBagItem(SeedBagTier.DIAMOND, new Item.Properties().stacksTo(1)));
 
     public static final DeferredHolder<CreativeModeTab, CreativeModeTab> FARM_TWEAKS_TAB = CREATIVE_MODE_TABS.register("farmtweaks", () -> CreativeModeTab.builder()
             .title(Component.translatable("itemGroup.farmtweaks"))
@@ -82,6 +77,8 @@ public class FarmTweaks {
             .displayItems((parameters, output) -> {
                 if (Config.enableSeedBags()) {
                     output.accept(SEED_BAG.get());
+                    output.accept(GOLD_SEED_BAG.get());
+                    output.accept(DIAMOND_SEED_BAG.get());
                 }
             }).build());
 
@@ -94,29 +91,7 @@ public class FarmTweaks {
 
         modContainer.registerConfig(ModConfig.Type.COMMON, Config.SPEC, "farmtweaks.toml");
 
-        // Optional: if we're on the physical client and Cloth Config is installed, expose a nicer in-game config UI.
-        // This is reflection-only so we don't hard-depend on client-only classes or Cloth Config at runtime.
-        try {
-            Class.forName("net.neoforged.neoforge.client.gui.IConfigScreenFactory");
-            Class<?> compat = Class.forName("com.sncial.farmtweaks.ClothConfigCompat");
-            compat.getDeclaredMethod("registerConfigScreen", ModContainer.class).invoke(null, modContainer);
-        } catch (Throwable ignored) {
-            // Dedicated server, older NeoForge, or Cloth Config not present; no config screen integration.
-        }
-
         NeoForge.EVENT_BUS.register(this);
-    }
-
-    private static int getRadiusForLevel(int efficiencyLevel, boolean isHarvest) {
-        if (efficiencyLevel <= 0) {
-            return 0;
-        }
-        // Hardcoded mapping for now; same for tilling and harvest, but split if needed later.
-        return switch (efficiencyLevel) {
-            case 1, 2 -> 1;
-            case 3, 4 -> 2;
-            default -> 3; // level 5+ -> radius 3
-        };
     }
 
     private void commonSetup(FMLCommonSetupEvent event) {
@@ -341,9 +316,7 @@ public class FarmTweaks {
                 }
 
                 if (!appliedCostsAndRewards) {
-                    boolean inSeason = level instanceof ServerLevel serverLevel
-                            && SereneSeasonsCompat.isCropInSeason(serverLevel, pos, state);
-                    applyHarvestCostsAndRewards(level, player, event.getHand(), pos, toolForLoot, isSereneXpBoostEligible(inSeason));
+                    applyHarvestCostsAndRewards(level, player, event.getHand(), pos, toolForLoot);
                 }
 
                 harvestedAny = true;
@@ -416,9 +389,6 @@ public class FarmTweaks {
             return false;
         }
 
-        boolean inSeason = SereneSeasonsCompat.isCropInSeason(serverLevel, pos, harvestState);
-        boolean sereneXpBoostEligible = isSereneXpBoostEligible(inSeason);
-
         player.awardStat(Stats.BLOCK_MINED.get(harvestState.getBlock()));
         if (!toolForLoot.isEmpty()) {
             player.awardStat(Stats.ITEM_USED.get(toolForLoot.getItem()));
@@ -427,7 +397,7 @@ public class FarmTweaks {
         popHarvestDrops(serverLevel, pos, harvestState, player, toolForLoot, true);
 
         // Fortune bonus: add extra non-seed drops for "wheat-like" crops that drop both produce + seeds.
-        if (fortuneLevel > 0 && shouldApplyFortuneBonus(inSeason)) {
+        if (fortuneLevel > 0) {
             for (ItemStack drop : Block.getDrops(harvestState, serverLevel, pos, null, player, toolForLoot)) {
                 if (drop.isEmpty() || drop.is(SEEDLIKE_ITEMS)) {
                     continue;
@@ -445,16 +415,8 @@ public class FarmTweaks {
         harvestState.spawnAfterBreak(serverLevel, pos, toolForLoot, true);
         level.setBlockAndUpdate(pos, resetState);
         player.awardStat(Stats.ITEM_USED.get(resetState.getBlock().asItem()));
-        applyHarvestCostsAndRewards(level, player, hand, pos, toolForLoot, sereneXpBoostEligible);
+        applyHarvestCostsAndRewards(level, player, hand, pos, toolForLoot);
         return true;
-    }
-
-    private static boolean shouldApplyFortuneBonus(boolean inSeason) {
-        return !Config.enableSereneSeasonsFortuneGating() || inSeason;
-    }
-
-    private static boolean isSereneXpBoostEligible(boolean inSeason) {
-        return SereneSeasonsCompat.isLoaded() && inSeason;
     }
 
     private static void popHarvestDrops(
@@ -491,8 +453,7 @@ public class FarmTweaks {
             Player player,
             InteractionHand hand,
             BlockPos pos,
-            ItemStack toolForLoot,
-            boolean sereneXpBoostEligible
+            ItemStack toolForLoot
     ) {
         // Damage the hoe once per harvested crop (if a hoe was used).
         if (!player.isCreative() && !toolForLoot.isEmpty()) {
@@ -503,7 +464,7 @@ public class FarmTweaks {
         }
 
         // Reward a small amount of XP for each fully grown crop harvested.
-        int xp = Config.xpForCrop(sereneXpBoostEligible);
+        int xp = Config.xpPerCrop();
         if (xp > 0) {
             level.addFreshEntity(new ExperienceOrb(
                     level,
@@ -565,14 +526,6 @@ public class FarmTweaks {
             );
         }
 
-        if (!Config.enableGenericAgeCropHarvest()) {
-            return null;
-        }
-
-        if (Config.useHarvestWhitelistTag() && !state.is(RIGHT_CLICK_HARVESTABLE)) {
-            return null;
-        }
-
         IntegerProperty ageProp = findAgeProperty(state);
         if (ageProp == null) {
             return null;
@@ -620,55 +573,4 @@ public class FarmTweaks {
     }
 
     private record CropLike(boolean mature, BlockState resetState) {}
-
-    @SubscribeEvent
-    public void onServerStarting(ServerStartingEvent event) {
-        LOGGER.info("FarmTweaks server starting");
-
-        // Debug: confirm the seed bag item + recipe are actually present at runtime.
-        // This is intentionally noisy so we can quickly spot JSON/pack/namespace issues in logs.
-        ResourceLocation seedBagId = ResourceLocation.fromNamespaceAndPath(MODID, "seed_bag");
-        boolean itemRegistered = BuiltInRegistries.ITEM.containsKey(seedBagId);
-        LOGGER.info("[SeedBag] Item registered in BuiltInRegistries: {} (id={})", itemRegistered, seedBagId);
-
-        try {
-            var rm = event.getServer().getRecipeManager();
-            var recipe = rm.byKey(seedBagId);
-            LOGGER.info("[SeedBag] Recipe present in RecipeManager: {} (id={})", recipe.isPresent(), seedBagId);
-
-            if (recipe.isEmpty()) {
-                int shown = (int) rm.getRecipeIds()
-                        .filter(id -> MODID.equals(id.getNamespace()))
-                        .limit(50)
-                        .peek(id -> LOGGER.info("[SeedBag] Found recipe in namespace {}: {}", MODID, id))
-                        .count();
-                if (shown == 0) {
-                    LOGGER.info("[SeedBag] No recipes found for namespace {} at all. This usually means data files are not being loaded.", MODID);
-                } else if (shown >= 50) {
-                    LOGGER.info("[SeedBag] (more recipes omitted; showing first 50)");
-                }
-            }
-        } catch (Throwable t) {
-            LOGGER.warn("[SeedBag] Failed to query RecipeManager for diagnostics: {}", t.toString());
-        }
-
-        // Debug logging for tag membership / destroy speed (keep commented unless actively troubleshooting).
-        // if (Config.logToolPreferenceDebug) {
-        //     BlockState pumpkin = Blocks.PUMPKIN.defaultBlockState();
-        //     BlockState melon = Blocks.MELON.defaultBlockState();
-        //
-        //     LOGGER.info("Pumpkin in mineable/hoe: {}", pumpkin.is(BlockTags.MINEABLE_WITH_HOE));
-        //     LOGGER.info("Pumpkin in mineable/axe: {}", pumpkin.is(BlockTags.MINEABLE_WITH_AXE));
-        //     LOGGER.info("Melon in mineable/hoe: {}", melon.is(BlockTags.MINEABLE_WITH_HOE));
-        //     LOGGER.info("Melon in mineable/axe: {}", melon.is(BlockTags.MINEABLE_WITH_AXE));
-        //
-        //     ItemStack woodenHoe = new ItemStack(Items.WOODEN_HOE);
-        //     ItemStack woodenAxe = new ItemStack(Items.WOODEN_AXE);
-        //
-        //     LOGGER.info("DestroySpeed wooden hoe on pumpkin: {}", woodenHoe.getDestroySpeed(pumpkin));
-        //     LOGGER.info("DestroySpeed wooden axe on pumpkin: {}", woodenAxe.getDestroySpeed(pumpkin));
-        //     LOGGER.info("DestroySpeed wooden hoe on melon: {}", woodenHoe.getDestroySpeed(melon));
-        //     LOGGER.info("DestroySpeed wooden axe on melon: {}", woodenAxe.getDestroySpeed(melon));
-        // }
-    }
 }

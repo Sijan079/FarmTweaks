@@ -23,14 +23,10 @@ public final class Config {
     private static final ModConfigSpec.BooleanValue ENABLE_CROP_XP_REWARDS;
     private static final ModConfigSpec.BooleanValue ENABLE_CUSTOM_WATER_HYDRATION_RANGE;
     private static final ModConfigSpec.BooleanValue INCLUDE_WATERLOGGED_HYDRATION_BLOCKS;
-    private static final ModConfigSpec.BooleanValue ENABLE_GENERIC_AGE_CROP_HARVEST;
-    private static final ModConfigSpec.BooleanValue USE_HARVEST_WHITELIST_TAG;
-    private static final ModConfigSpec.BooleanValue ENABLE_SERENE_SEASONS_FORTUNE_GATING;
-    private static final ModConfigSpec.BooleanValue ENABLE_SERENE_SEASONS_XP_BOOST;
+    private static final ModConfigSpec.ConfigValue<String> SEED_BAG_AOE_SHAPE;
 
     // Tunables (numbers / thresholds)
     private static final ModConfigSpec.IntValue XP_PER_CROP;
-    private static final ModConfigSpec.IntValue SERENE_SEASONS_XP_BOOST;
     private static final ModConfigSpec.IntValue WATER_HYDRATION_HORIZONTAL_RANGE;
     private static final ModConfigSpec.IntValue WATER_HYDRATION_VERTICAL_RANGE;
     private static final ModConfigSpec.IntValue AOE_TILLING_COUNT_STEP;
@@ -66,20 +62,6 @@ public final class Config {
                 .comment("If true, waterlogged blocks count as hydration sources for the custom hydration range.")
                 .define("includeWaterloggedHydrationBlocks", true);
 
-        BUILDER.comment("Compatibility options").push("compat");
-        ENABLE_GENERIC_AGE_CROP_HARVEST = BUILDER
-                .comment("If true, treat blocks with an integer 'age' property as harvestable crops (helps many crop mods).")
-                .define("genericAgeCropHarvest", true);
-        USE_HARVEST_WHITELIST_TAG = BUILDER
-                .comment("If true, generic age-crop harvest only applies to blocks in the farmtweaks:right_click_harvestable tag.")
-                .define("harvestWhitelistTagOnly", false);
-        ENABLE_SERENE_SEASONS_FORTUNE_GATING = BUILDER
-                .comment("If true and Serene Seasons is installed, FarmTweaks' extra Fortune crop bonus only applies to in-season crops.")
-                .define("sereneSeasonsFortuneOnlyInSeason", false);
-        ENABLE_SERENE_SEASONS_XP_BOOST = BUILDER
-                .comment("If true and Serene Seasons is installed, in-season crops receive an extra XP reward.")
-                .define("sereneSeasonsInSeasonXpBoost", false);
-        BUILDER.pop();
         BUILDER.pop();
 
         // Tunables come after feature switches.
@@ -87,9 +69,11 @@ public final class Config {
         XP_PER_CROP = BUILDER
                 .comment("XP awarded per mature crop harvested (use cropXpRewards=false to disable XP).")
                 .defineInRange("xpPerCrop", 1, 1, 1000);
-        SERENE_SEASONS_XP_BOOST = BUILDER
-                .comment("Extra XP awarded for in-season crops when sereneSeasonsInSeasonXpBoost is enabled.")
-                .defineInRange("sereneSeasonsXpBoostAmount", 1, 0, 1000);
+        SEED_BAG_AOE_SHAPE = BUILDER
+                .comment("Shape used for charged Seed Bag planting: square or radial.")
+                .define("seedBagAoeShape", "square", value ->
+                        value instanceof String shape
+                                && ("square".equalsIgnoreCase(shape) || "radial".equalsIgnoreCase(shape)));
         WATER_HYDRATION_HORIZONTAL_RANGE = BUILDER
                 .comment("Horizontal farmland hydration range for water when customWaterHydrationRange is enabled. Vanilla is 4.")
                 .defineInRange("waterHydrationHorizontalRange", 4, 0, 32);
@@ -144,26 +128,6 @@ public final class Config {
         return ENABLE_CROP_XP_REWARDS.get() ? XP_PER_CROP.get() : 0;
     }
 
-    public static int xpForCrop(boolean inSeason) {
-        int xp = xpPerCrop();
-        if (xp > 0 && inSeason && enableSereneSeasonsXpBoost()) {
-            xp += SERENE_SEASONS_XP_BOOST.get();
-        }
-        return xp;
-    }
-
-    public static boolean enableSereneSeasonsFortuneGating() {
-        return ENABLE_SERENE_SEASONS_FORTUNE_GATING.get();
-    }
-
-    public static boolean enableSereneSeasonsXpBoost() {
-        return ENABLE_SERENE_SEASONS_XP_BOOST.get();
-    }
-
-    public static int sereneSeasonsXpBoostAmount() {
-        return SERENE_SEASONS_XP_BOOST.get();
-    }
-
     public static int waterHydrationHorizontalRange() {
         return WATER_HYDRATION_HORIZONTAL_RANGE.get();
     }
@@ -180,38 +144,8 @@ public final class Config {
         return AOE_HARVEST_COUNT_STEP.get();
     }
 
-    public static boolean enableGenericAgeCropHarvest() {
-        return ENABLE_GENERIC_AGE_CROP_HARVEST.get();
+    public static SeedBagAoeShape seedBagAoeShape() {
+        return SeedBagAoeShape.fromConfig(SEED_BAG_AOE_SHAPE.get());
     }
 
-    public static boolean useHarvestWhitelistTag() {
-        return USE_HARVEST_WHITELIST_TAG.get();
-    }
-
-    // --- Mutable accessors for UI integrations (e.g., Cloth Config) ---
-    // Keep these narrowly scoped so game logic continues to read via the typed getters above.
-    static void setEnableRightClickHarvest(boolean v) { ENABLE_RIGHT_CLICK_HARVEST.set(v); }
-    static void setEnableFortuneCrops(boolean v) { ENABLE_FORTUNE_CROPS.set(v); }
-    static void setEnableAoETilling(boolean v) { ENABLE_AOE_TILLING.set(v); }
-    static void setEnableAoEHarvest(boolean v) { ENABLE_AOE_HARVEST.set(v); }
-    static void setEnableSeedBags(boolean v) { ENABLE_SEED_BAGS.set(v); }
-    static void setEnableCropXpRewards(boolean v) { ENABLE_CROP_XP_REWARDS.set(v); }
-    static void setEnableCustomWaterHydrationRange(boolean v) { ENABLE_CUSTOM_WATER_HYDRATION_RANGE.set(v); }
-    static void setIncludeWaterloggedHydrationBlocks(boolean v) { INCLUDE_WATERLOGGED_HYDRATION_BLOCKS.set(v); }
-    static void setEnableGenericAgeCropHarvest(boolean v) { ENABLE_GENERIC_AGE_CROP_HARVEST.set(v); }
-    static void setUseHarvestWhitelistTag(boolean v) { USE_HARVEST_WHITELIST_TAG.set(v); }
-    static void setEnableSereneSeasonsFortuneGating(boolean v) { ENABLE_SERENE_SEASONS_FORTUNE_GATING.set(v); }
-    static void setEnableSereneSeasonsXpBoost(boolean v) { ENABLE_SERENE_SEASONS_XP_BOOST.set(v); }
-
-    static void setXpPerCrop(int v) { XP_PER_CROP.set(v); }
-    static void setSereneSeasonsXpBoost(int v) { SERENE_SEASONS_XP_BOOST.set(v); }
-    static void setWaterHydrationHorizontalRange(int v) { WATER_HYDRATION_HORIZONTAL_RANGE.set(v); }
-    static void setWaterHydrationVerticalRange(int v) { WATER_HYDRATION_VERTICAL_RANGE.set(v); }
-    static void setAoeTillingCountStep(int v) { AOE_TILLING_COUNT_STEP.set(v); }
-    static void setAoeHarvestCountStep(int v) { AOE_HARVEST_COUNT_STEP.set(v); }
-
-    static void save() {
-        // Writes back to farmtweaks.toml
-        SPEC.save();
-    }
 }

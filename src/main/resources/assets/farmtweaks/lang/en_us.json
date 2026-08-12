@@ -1,10 +1,11 @@
 {
   "itemGroup.farmtweaks": "Farm Tweaks",
   "item.farmtweaks.seed_bag": "Seed Bag",
+  "item.farmtweaks.gold_seed_bag": "Gold Seed Bag",
+  "item.farmtweaks.diamond_seed_bag": "Diamond Seed Bag",
 
   "config.farmtweaks.title": "Farm Tweaks",
   "config.farmtweaks.category.features": "Features",
-  "config.farmtweaks.category.compat": "Compatibility",
   "config.farmtweaks.category.tuning": "Tuning",
 
   "config.farmtweaks.features.rightClickHarvest": "Right-click harvest",
@@ -24,19 +25,10 @@
   "config.farmtweaks.features.includeWaterloggedHydrationBlocks": "Include waterlogged blocks",
   "config.farmtweaks.features.includeWaterloggedHydrationBlocks.tt": "Allows waterlogged blocks to hydrate farmland within the custom hydration range.",
 
-  "config.farmtweaks.compat.genericAgeCropHarvest": "Generic age-crop harvest",
-  "config.farmtweaks.compat.genericAgeCropHarvest.tt": "Treat blocks with an integer 'age' property as harvestable crops.",
-  "config.farmtweaks.compat.harvestWhitelistTagOnly": "Whitelist tag only",
-  "config.farmtweaks.compat.harvestWhitelistTagOnly.tt": "When enabled, only blocks in farmtweaks:right_click_harvestable are harvested by generic age-crop logic.",
-  "config.farmtweaks.compat.sereneSeasonsFortuneOnlyInSeason": "Serene Seasons Fortune gating",
-  "config.farmtweaks.compat.sereneSeasonsFortuneOnlyInSeason.tt": "When Serene Seasons is installed, FarmTweaks' extra Fortune crop bonus only applies to in-season crops.",
-  "config.farmtweaks.compat.sereneSeasonsInSeasonXpBoost": "Serene Seasons XP boost",
-  "config.farmtweaks.compat.sereneSeasonsInSeasonXpBoost.tt": "When Serene Seasons is installed, in-season crops receive extra FarmTweaks harvest XP.",
-
   "config.farmtweaks.tuning.xpPerCrop": "XP per crop",
   "config.farmtweaks.tuning.xpPerCrop.tt": "XP awarded per mature crop harvested (disable via the XP rewards feature toggle).",
-  "config.farmtweaks.tuning.sereneSeasonsXpBoostAmount": "Serene Seasons XP boost amount",
-  "config.farmtweaks.tuning.sereneSeasonsXpBoostAmount.tt": "Extra XP awarded for in-season crops when the Serene Seasons XP boost is enabled.",
+  "config.farmtweaks.tuning.seedBagAoeShape": "Seed Bag planting shape",
+  "config.farmtweaks.tuning.seedBagAoeShape.tt": "Shape used for charged Seed Bag planting: square or radial.",
   "config.farmtweaks.tuning.waterHydrationHorizontalRange": "Water hydration horizontal range",
   "config.farmtweaks.tuning.waterHydrationHorizontalRange.tt": "Horizontal distance water can hydrate farmland when custom hydration range is enabled. Vanilla is 4.",
   "config.farmtweaks.tuning.waterHydrationVerticalRange": "Water hydration vertical range",

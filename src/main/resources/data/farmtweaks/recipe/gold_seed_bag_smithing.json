@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:smithing_transform",
+  "template": {
+    "item": "minecraft:leather"
+  },
+  "base": {
+    "item": "farmtweaks:seed_bag"
+  },
+  "addition": {
+    "item": "minecraft:gold_ingot"
+  },
+  "result": {
+    "id": "farmtweaks:gold_seed_bag"
+  }
+}
