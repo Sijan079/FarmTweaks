@@ -43,7 +43,7 @@ public final class Config {
                 .comment("Enables right-click harvesting for mature crops.")
                 .define("rightClickHarvest", true);
         ENABLE_FORTUNE_CROPS = BUILDER
-                .comment("When harvesting with a hoe, applies a Fortune-style bonus to non-seed drops.")
+                .comment("When harvesting seed-replanting crops with a hoe, applies a Fortune-style bonus to non-seed drops. Carrots and potatoes use vanilla Fortune only.")
                 .define("fortuneCrops", true);
         ENABLE_AOE_HARVEST = BUILDER
                 .comment("Enables AoE harvesting when using a hoe (disabled while sneaking).")

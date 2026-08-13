@@ -24,7 +24,6 @@ import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.CropBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
@@ -92,7 +91,7 @@ public final class FarmTweaksAreaPreviewClient {
         if (isHoeTarget(level, player, center, mode)) {
             return new Preview(connectedHoeTargets(level, player, center, mode, hoe), center.getY() + 1, mode == HoeTillingMode.REVERT_TO_DIRT ? 0.95f : 0.3f, mode == HoeTillingMode.REVERT_TO_DIRT ? 0.35f : 0.9f, 0.2f);
         }
-        if (centerState.getBlock() instanceof CropBlock crop && crop.isMaxAge(centerState)) {
+        if (FarmTweaks.isMatureCropLike(centerState)) {
             return new Preview(connectedMatureCrops(level, center, hoe, player.isShiftKeyDown()), center.getY() + 1, 1.0f, 0.7f, 0.2f);
         }
         return Preview.EMPTY;
@@ -114,7 +113,7 @@ public final class FarmTweaksAreaPreviewClient {
         int limit = sneaking ? 1 : hoeLimit(level, hoe, Config.aoeHarvestCountStep(), false);
         return floodFill(level, center, limit, pos -> {
             BlockState state = level.getBlockState(pos);
-            return state.getBlock() instanceof CropBlock crop && crop.isMaxAge(state);
+            return FarmTweaks.isMatureCropLike(state);
         });
     }
 

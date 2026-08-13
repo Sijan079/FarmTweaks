@@ -5,11 +5,16 @@ import org.slf4j.Logger;
 import com.mojang.logging.LogUtils;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
 
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.NonNullList;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -25,6 +30,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemNameBlockItem;
 import net.minecraft.world.item.HoeItem;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.Tier;
 import net.minecraft.world.item.Tiers;
 import net.minecraft.world.item.context.UseOnContext;
@@ -36,9 +42,15 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.CocoaBlock;
 import net.minecraft.world.level.block.CropBlock;
+import net.minecraft.world.level.block.NetherWartBlock;
 import net.minecraft.world.level.block.FarmBlock;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.item.crafting.CraftingBookCategory;
+import net.minecraft.world.item.crafting.Ingredient;
+import net.minecraft.world.item.crafting.RecipeHolder;
+import net.minecraft.world.item.crafting.ShapelessRecipe;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.InteractionResult;
@@ -56,6 +68,7 @@ import net.neoforged.neoforge.event.EventHooks;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.level.BlockEvent;
+import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
@@ -69,6 +82,12 @@ public class FarmTweaks {
             Registries.ITEM,
             ResourceLocation.fromNamespaceAndPath(MODID, "seedlike")
     );
+    private static final TagKey<Item> PUMPKIN_SLICES = TagKey.create(
+            Registries.ITEM,
+            ResourceLocation.fromNamespaceAndPath(MODID, "pumpkin_slices")
+    );
+    private static final ResourceLocation VANILLA_PUMPKIN_PIE_RECIPE = ResourceLocation.withDefaultNamespace("pumpkin_pie");
+    private static final ResourceLocation FARMERS_DELIGHT_PUMPKIN_SLICE = ResourceLocation.fromNamespaceAndPath("farmersdelight", "pumpkin_slice");
 
     public static final DeferredRegister.Blocks BLOCKS = DeferredRegister.createBlocks(MODID);
     public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(MODID);
@@ -77,6 +96,7 @@ public class FarmTweaks {
     public static final DeferredItem<SeedBagItem> SEED_BAG = ITEMS.register("seed_bag", () -> new SeedBagItem(SeedBagTier.BASIC, new Item.Properties().stacksTo(1)));
     public static final DeferredItem<SeedBagItem> GOLD_SEED_BAG = ITEMS.register("gold_seed_bag", () -> new SeedBagItem(SeedBagTier.GOLD, new Item.Properties().stacksTo(1)));
     public static final DeferredItem<SeedBagItem> DIAMOND_SEED_BAG = ITEMS.register("diamond_seed_bag", () -> new SeedBagItem(SeedBagTier.DIAMOND, new Item.Properties().stacksTo(1)));
+    public static final DeferredItem<Item> PUMPKIN_SLICE = ITEMS.register("pumpkin_slice", () -> new Item(new Item.Properties()));
     public static final Map<FlowerCropType, DeferredHolder<net.minecraft.world.level.block.Block, FlowerCropBlock>> FLOWER_CROPS = new EnumMap<>(FlowerCropType.class);
     public static final Map<FlowerCropType, DeferredItem<ItemNameBlockItem>> FLOWER_SEEDS = new EnumMap<>(FlowerCropType.class);
 
@@ -98,6 +118,7 @@ public class FarmTweaks {
                     output.accept(GOLD_SEED_BAG.get());
                     output.accept(DIAMOND_SEED_BAG.get());
                 }
+                output.accept(PUMPKIN_SLICE.get());
                 if (Config.enableFlowerSeeds()) {
                     FLOWER_SEEDS.values().forEach(seed -> output.accept(seed.get()));
                 }
@@ -113,6 +134,31 @@ public class FarmTweaks {
         modContainer.registerConfig(ModConfig.Type.COMMON, Config.SPEC, "farmtweaks.toml");
 
         NeoForge.EVENT_BUS.register(this);
+    }
+
+    @SubscribeEvent
+    public void onServerStarting(ServerStartingEvent event) {
+        var recipeManager = event.getServer().getRecipeManager();
+        List<RecipeHolder<?>> recipes = new ArrayList<>();
+        for (RecipeHolder<?> recipe : recipeManager.getRecipes()) {
+            ResourceLocation id = recipe.id();
+            if (!PumpkinRecipePolicy.replacesVanillaRecipe(id.getNamespace(), id.getPath())) {
+                recipes.add(recipe);
+            }
+        }
+
+        NonNullList<Ingredient> ingredients = NonNullList.of(
+                Ingredient.EMPTY,
+                Ingredient.of(PUMPKIN_SLICES),
+                Ingredient.of(PUMPKIN_SLICES),
+                Ingredient.of(Items.SUGAR),
+                Ingredient.of(Items.EGG)
+        );
+        recipes.add(new RecipeHolder<>(
+                VANILLA_PUMPKIN_PIE_RECIPE,
+                new ShapelessRecipe("", CraftingBookCategory.MISC, new ItemStack(Items.PUMPKIN_PIE), ingredients)
+        ));
+        recipeManager.replaceRecipes(recipes);
     }
 
     private void commonSetup(FMLCommonSetupEvent event) {
@@ -279,7 +325,7 @@ public class FarmTweaks {
 
         // Only start the harvest if the clicked block is a mature crop-like block.
         BlockState clickedState = level.getBlockState(center);
-        if (!isMatureCropLike(level, center, clickedState)) {
+        if (!isMatureCropLike(clickedState)) {
             return;
         }
 
@@ -300,7 +346,7 @@ public class FarmTweaks {
             processed++;
 
             BlockState state = level.getBlockState(pos);
-            CropLike cropLike = cropLike(level, pos, state);
+            CropLike cropLike = cropLike(state);
             if (cropLike == null) {
                 continue;
             }
@@ -351,7 +397,7 @@ public class FarmTweaks {
                     long k1 = n1.asLong();
                     if (!visited.contains(k1)) {
                         BlockState s1 = level.getBlockState(n1);
-                        if (cropLike(level, n1, s1) != null) {
+                        if (cropLike(s1) != null) {
                             visited.add(k1);
                             queue.addLast(n1);
                         }
@@ -364,7 +410,7 @@ public class FarmTweaks {
                         long k2 = n2.asLong();
                         if (!visited.contains(k2)) {
                             BlockState s2 = level.getBlockState(n2);
-                            if (isMatureCropLike(level, n2, s2)) {
+                            if (isMatureCropLike(s2)) {
                                 visited.add(k2);
                                 queue.addLast(n2);
                             }
@@ -410,8 +456,14 @@ public class FarmTweaks {
 
         popHarvestDrops(serverLevel, pos, harvestState, player, toolForLoot, true);
 
-        // Fortune bonus: add extra non-seed drops for "wheat-like" crops that drop both produce + seeds.
-        if (fortuneLevel > 0) {
+        // Vanilla already applies Fortune to carrot- and potato-style crops. FarmTweaks adds its
+        // produce bonus only when the crop is replanted with a tagged seed item, or for cocoa,
+        // whose vanilla loot table has no Fortune function.
+        if (HarvestFortunePolicy.hasExtraBonus(
+                isSeedReplantingCrop(serverLevel, pos, harvestState, player),
+                harvestState.is(Blocks.COCOA),
+                fortuneLevel
+        )) {
             for (ItemStack drop : Block.getDrops(harvestState, serverLevel, pos, null, player, toolForLoot)) {
                 if (drop.isEmpty() || drop.is(SEEDLIKE_ITEMS)) {
                     continue;
@@ -460,6 +512,40 @@ public class FarmTweaks {
                 Block.popResource(level, pos, toPop);
             }
         }
+    }
+
+    @SubscribeEvent
+    public void onPumpkinBroken(BlockEvent.BreakEvent event) {
+        if (event.isCanceled() || !(event.getLevel() instanceof ServerLevel level)
+                || !event.getState().is(Blocks.PUMPKIN)) {
+            return;
+        }
+
+        Player player = event.getPlayer();
+        ItemStack tool = player.getMainHandItem();
+        if (enchantmentLevel(level, tool, Enchantments.SILK_TOUCH) > 0) {
+            return;
+        }
+
+        event.setCanceled(true);
+        BlockPos pos = event.getPos();
+        level.setBlockAndUpdate(pos, Blocks.AIR.defaultBlockState());
+        level.levelEvent(2001, pos, Block.getId(event.getState()));
+        player.awardStat(Stats.BLOCK_MINED.get(Blocks.PUMPKIN));
+
+        if (!player.isCreative()) {
+            int fortune = enchantmentLevel(level, tool, Enchantments.FORTUNE);
+            int count = PumpkinSliceDrops.count(level.random.nextInt(5), level.random.nextInt(fortune + 1));
+            Block.popResource(level, pos, new ItemStack(pumpkinSliceItem(), count));
+            if (!tool.isEmpty()) {
+                tool.hurtAndBreak(1, player, EquipmentSlot.MAINHAND);
+            }
+        }
+    }
+
+    private static boolean isSeedReplantingCrop(ServerLevel level, BlockPos pos, BlockState harvestState, Player player) {
+        BlockHitResult hitResult = new BlockHitResult(Vec3.atCenterOf(pos), Direction.UP, pos, false);
+        return harvestState.getCloneItemStack(hitResult, level, pos, player).is(SEEDLIKE_ITEMS);
     }
 
     private static void applyHarvestCostsAndRewards(
@@ -519,8 +605,8 @@ public class FarmTweaks {
         return !canceled;
     }
 
-    private static boolean isMatureCropLike(Level level, BlockPos pos, BlockState state) {
-        CropLike cl = cropLike(level, pos, state);
+    static boolean isMatureCropLike(BlockState state) {
+        CropLike cl = cropLike(state);
         return cl != null && cl.mature();
     }
 
@@ -541,9 +627,25 @@ public class FarmTweaks {
         return java.util.Optional.empty();
     }
 
-    private static CropLike cropLike(Level level, BlockPos pos, BlockState state) {
+    private static CropLike cropLike(BlockState state) {
         if (state.getBlock() instanceof CropBlock cropBlock) {
             return new CropLike(cropBlock.isMaxAge(state), cropBlock.getStateForAge(0));
+        }
+
+        if (state.getBlock() instanceof NetherWartBlock) {
+            int age = state.getValue(NetherWartBlock.AGE);
+            return new CropLike(
+                    VanillaHarvestCropAges.isMature(age, VanillaHarvestCropAges.NETHER_WART_MAX_AGE),
+                    state.setValue(NetherWartBlock.AGE, 0)
+            );
+        }
+
+        if (state.getBlock() instanceof CocoaBlock) {
+            int age = state.getValue(CocoaBlock.AGE);
+            return new CropLike(
+                    VanillaHarvestCropAges.isMature(age, VanillaHarvestCropAges.COCOA_MAX_AGE),
+                    state.setValue(CocoaBlock.AGE, 0)
+            );
         }
         return null;
     }
@@ -556,7 +658,7 @@ public class FarmTweaks {
         if (!(tool.getItem() instanceof HoeItem hoe)) {
             return 1;
         }
-        return HoeRange.sideLength(hoeTierSideLength(hoe.getTier()), efficiencyLevel(level, tool));
+        return HoeRange.tillSideLength(hoeTierSideLength(hoe.getTier()));
     }
 
     private static int hoeTierSideLength(Tier tier) {
@@ -569,10 +671,21 @@ public class FarmTweaks {
     }
 
     static int efficiencyLevel(Level level, ItemStack tool) {
+        return enchantmentLevel(level, tool, Enchantments.EFFICIENCY);
+    }
+
+    private static int enchantmentLevel(Level level, ItemStack tool, ResourceKey<net.minecraft.world.item.enchantment.Enchantment> enchantment) {
         return EnchantmentHelper.getItemEnchantmentLevel(
-                level.registryAccess().lookupOrThrow(Registries.ENCHANTMENT).getOrThrow(Enchantments.EFFICIENCY),
+                level.registryAccess().lookupOrThrow(Registries.ENCHANTMENT).getOrThrow(enchantment),
                 tool
         );
+    }
+
+    private static Item pumpkinSliceItem() {
+        return PumpkinSliceDrops.source(BuiltInRegistries.ITEM.containsKey(FARMERS_DELIGHT_PUMPKIN_SLICE))
+                == PumpkinSliceDrops.Source.FARMERS_DELIGHT
+                ? BuiltInRegistries.ITEM.get(FARMERS_DELIGHT_PUMPKIN_SLICE)
+                : PUMPKIN_SLICE.get();
     }
 
     private static boolean isHoeEfficiencySpeedTarget(BlockState state) {

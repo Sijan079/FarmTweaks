@@ -4,13 +4,14 @@ FarmTweaks is a NeoForge 1.21.1 mod that makes everyday farming quicker while ke
 
 ## Current Features
 
-- Right-click harvest mature crops with automatic replanting, optional Fortune-aware drops, crop XP, and connected AoE harvesting.
+- Right-click harvest mature crops, nether wart, and cocoa with automatic replanting, optional Fortune-aware drops, crop XP, and connected AoE harvesting.
 - Tiered Seed Bags that store one plantable type and plant a charged target area. Their coverage is previewed with a bright perimeter outline.
-- Tiered hoe tilling and farmland reversion: Wood starts at 1×1, Stone 2×2, Iron/Gold 3×3, Diamond 4×4, and Netherite 5×5. Efficiency adds to the footprint side length; sneaking always targets one block.
+- Tiered hoe tilling and farmland reversion: Wood starts at 1×1, Stone 2×2, Iron/Gold 3×3, Diamond 4×4, and Netherite 5×5. Hoe tier alone defines this footprint; Efficiency extends connected crop harvesting instead. Sneaking always targets one block.
 - Farmland cannot be trampled, while normal dehydration and blocked-above reversion still work. A hoe can deliberately revert targeted farmland to dirt without pushing the player into the new block.
 - Hoe coverage previews that show only the outer boundary of the exact till, revert, or harvest area.
 - Cultivable seeds and farmland crops for all current vanilla small flowers, including Seed Bag and existing harvest-system compatibility.
 - Hoe mining support for pumpkins, carved pumpkins, melons, mushroom blocks/stems, and the existing wart blocks. Pumpkin, melon, and mushroom blocks remain axe-minable too.
+- Pumpkin blocks yield Fortune-affected Pumpkin Slices (while Silk Touch preserves the block); pumpkin pie and pumpkin-seed recipes use compatible slices, while jack-o'-lanterns still use carved pumpkins.
 - Configurable farmland hydration range, including optional waterlogged sources.
 
 ## Roadmap
