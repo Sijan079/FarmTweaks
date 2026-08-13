@@ -20,6 +20,7 @@ public final class Config {
     private static final ModConfigSpec.BooleanValue ENABLE_AOE_TILLING;
     private static final ModConfigSpec.BooleanValue ENABLE_AOE_HARVEST;
     private static final ModConfigSpec.BooleanValue ENABLE_SEED_BAGS;
+    private static final ModConfigSpec.BooleanValue ENABLE_FLOWER_SEEDS;
     private static final ModConfigSpec.BooleanValue ENABLE_CROP_XP_REWARDS;
     private static final ModConfigSpec.BooleanValue ENABLE_CUSTOM_WATER_HYDRATION_RANGE;
     private static final ModConfigSpec.BooleanValue INCLUDE_WATERLOGGED_HYDRATION_BLOCKS;
@@ -31,6 +32,7 @@ public final class Config {
     private static final ModConfigSpec.IntValue WATER_HYDRATION_VERTICAL_RANGE;
     private static final ModConfigSpec.IntValue AOE_TILLING_COUNT_STEP;
     private static final ModConfigSpec.IntValue AOE_HARVEST_COUNT_STEP;
+    private static final ModConfigSpec.IntValue FLOWER_SEED_DROP_CHANCE_PERCENT;
 
     static {
         BUILDER.comment("FarmTweaks configuration").push("farmtweaks");
@@ -52,6 +54,9 @@ public final class Config {
         ENABLE_SEED_BAGS = BUILDER
                 .comment("Enables Seed Bag items and their right-click behavior.")
                 .define("seedBags", true);
+        ENABLE_FLOWER_SEEDS = BUILDER
+                .comment("Enables Flower Seeds and cultivable flower crops.")
+                .define("flowerSeeds", true);
         ENABLE_CROP_XP_REWARDS = BUILDER
                 .comment("If false, disables crop XP rewards regardless of xpPerCrop.")
                 .define("cropXpRewards", true);
@@ -86,6 +91,9 @@ public final class Config {
         AOE_TILLING_COUNT_STEP = BUILDER
                 .comment("AoE tilling scaling: max tilled blocks = 1 + (Efficiency level * aoeTillingCountStep).")
                 .defineInRange("aoeTillingCountStep", 6, 0, 256);
+        FLOWER_SEED_DROP_CHANCE_PERCENT = BUILDER
+                .comment("Chance for a broken vanilla small flower to drop its matching Flower Seed.")
+                .defineInRange("flowerSeedDropChancePercent", 25, 0, 100);
         BUILDER.pop();
 
         BUILDER.pop(); // farmtweaks
@@ -114,6 +122,10 @@ public final class Config {
 
     public static boolean enableCropXpRewards() {
         return ENABLE_CROP_XP_REWARDS.get();
+    }
+
+    public static boolean enableFlowerSeeds() {
+        return ENABLE_FLOWER_SEEDS.get();
     }
 
     public static boolean enableCustomWaterHydrationRange() {
@@ -146,6 +158,10 @@ public final class Config {
 
     public static SeedBagAoeShape seedBagAoeShape() {
         return SeedBagAoeShape.fromConfig(SEED_BAG_AOE_SHAPE.get());
+    }
+
+    public static int flowerSeedDropChancePercent() {
+        return FLOWER_SEED_DROP_CHANCE_PERCENT.get();
     }
 
 }

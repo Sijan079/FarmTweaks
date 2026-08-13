@@ -56,6 +56,10 @@ public class SeedBagItem extends Item {
         return read(stack).count >= tier.capacity();
     }
 
+    SeedBagTier tier() {
+        return tier;
+    }
+
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         if (!Config.enableSeedBags()) {

@@ -5,7 +5,8 @@ import org.slf4j.Logger;
 import com.mojang.logging.LogUtils;
 
 import java.util.ArrayDeque;
-import java.util.Collection;
+import java.util.EnumMap;
+import java.util.Map;
 
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import net.minecraft.core.BlockPos;
@@ -14,7 +15,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.stats.Stats;
 import net.minecraft.tags.TagKey;
-import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.ExperienceOrb;
@@ -22,8 +22,12 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemNameBlockItem;
 import net.minecraft.world.item.HoeItem;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Tier;
+import net.minecraft.world.item.Tiers;
+import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.level.Level;
@@ -33,6 +37,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.CropBlock;
+import net.minecraft.world.level.block.FarmBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
@@ -44,10 +49,13 @@ import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.neoforge.common.CommonHooks;
+import net.neoforged.neoforge.common.ItemAbilities;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.common.util.BlockSnapshot;
 import net.neoforged.neoforge.event.EventHooks;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.level.BlockEvent;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
@@ -69,6 +77,16 @@ public class FarmTweaks {
     public static final DeferredItem<SeedBagItem> SEED_BAG = ITEMS.register("seed_bag", () -> new SeedBagItem(SeedBagTier.BASIC, new Item.Properties().stacksTo(1)));
     public static final DeferredItem<SeedBagItem> GOLD_SEED_BAG = ITEMS.register("gold_seed_bag", () -> new SeedBagItem(SeedBagTier.GOLD, new Item.Properties().stacksTo(1)));
     public static final DeferredItem<SeedBagItem> DIAMOND_SEED_BAG = ITEMS.register("diamond_seed_bag", () -> new SeedBagItem(SeedBagTier.DIAMOND, new Item.Properties().stacksTo(1)));
+    public static final Map<FlowerCropType, DeferredHolder<net.minecraft.world.level.block.Block, FlowerCropBlock>> FLOWER_CROPS = new EnumMap<>(FlowerCropType.class);
+    public static final Map<FlowerCropType, DeferredItem<ItemNameBlockItem>> FLOWER_SEEDS = new EnumMap<>(FlowerCropType.class);
+
+    static {
+        for (FlowerCropType type : FlowerCropType.values()) {
+            var crop = BLOCKS.register(type.id() + "_crop", () -> new FlowerCropBlock(() -> FLOWER_SEEDS.get(type).get()));
+            FLOWER_CROPS.put(type, crop);
+            FLOWER_SEEDS.put(type, ITEMS.register(type.id() + "_seeds", () -> new ItemNameBlockItem(crop.get(), new Item.Properties())));
+        }
+    }
 
     public static final DeferredHolder<CreativeModeTab, CreativeModeTab> FARM_TWEAKS_TAB = CREATIVE_MODE_TABS.register("farmtweaks", () -> CreativeModeTab.builder()
             .title(Component.translatable("itemGroup.farmtweaks"))
@@ -79,6 +97,9 @@ public class FarmTweaks {
                     output.accept(SEED_BAG.get());
                     output.accept(GOLD_SEED_BAG.get());
                     output.accept(DIAMOND_SEED_BAG.get());
+                }
+                if (Config.enableFlowerSeeds()) {
+                    FLOWER_SEEDS.values().forEach(seed -> output.accept(seed.get()));
                 }
             }).build());
 
@@ -96,6 +117,40 @@ public class FarmTweaks {
 
     private void commonSetup(FMLCommonSetupEvent event) {
         LOGGER.info("FarmTweaks common setup");
+    }
+
+    @SubscribeEvent
+    public void onVanillaFlowerBroken(BlockEvent.BreakEvent event) {
+        if (event.isCanceled() || !(event.getLevel() instanceof Level level)
+                || level.isClientSide() || !Config.enableFlowerSeeds()) {
+            return;
+        }
+
+        flowerType(event.getState()).ifPresent(type -> {
+            if (level.random.nextInt(100) < Config.flowerSeedDropChancePercent()) {
+                Block.popResource(level, event.getPos(), new ItemStack(FLOWER_SEEDS.get(type).get()));
+            }
+        });
+    }
+
+    @SubscribeEvent
+    public void onFarmlandTrample(BlockEvent.FarmlandTrampleEvent event) {
+        if (FarmlandProtection.cancelTrample()) {
+            event.setCanceled(true);
+        }
+    }
+
+    @SubscribeEvent
+    public void onHoeBreakSpeed(PlayerEvent.BreakSpeed event) {
+        ItemStack tool = event.getEntity().getMainHandItem();
+        if (!(tool.getItem() instanceof HoeItem) || !isHoeEfficiencySpeedTarget(event.getState())) {
+            return;
+        }
+
+        int efficiency = efficiencyLevel(event.getEntity().level(), tool);
+        if (efficiency > 0 && HoeEfficiencySpeed.needsCustomBonus(tool.getDestroySpeed(event.getState()))) {
+            event.setNewSpeed(event.getNewSpeed() + HoeEfficiencySpeed.bonus(efficiency));
+        }
     }
 
     /**
@@ -121,13 +176,14 @@ public class FarmTweaks {
         if (Config.enableAoETilling() && tool.getItem() instanceof HoeItem) {
             BlockPos pos = event.getPos();
             BlockState state = level.getBlockState(pos);
+            HoeTillingMode tillingMode = HoeTillingMode.fromTarget(state.is(Blocks.FARMLAND));
 
-            // Only attempt tilling when right-clicking dirt-like blocks.
-            if (!level.isClientSide() && isTillable(state)) {
+            if (!level.isClientSide() && isTillingTarget(level, player, event.getHand(), pos, tillingMode)) {
                 // Sneaking/crouching explicitly disables AoE: only ever till the clicked block.
                 if (sneaking) {
-                    if (level.isEmptyBlock(pos.above())) {
-                        level.setBlockAndUpdate(pos, Blocks.FARMLAND.defaultBlockState());
+                    BlockState tilledState = resolveTilledState(level, player, event.getHand(), pos, tillingMode);
+                    if (tilledState != null) {
+                        applyTilledState(level, player, pos, state, tilledState, tillingMode);
                         if (!player.isCreative()) {
                             EquipmentSlot slot = event.getHand() == InteractionHand.MAIN_HAND
                                     ? EquipmentSlot.MAINHAND
@@ -141,39 +197,24 @@ public class FarmTweaks {
                     return;
                 }
 
-                int maxTillCount = 1;
-                int efficiency = EnchantmentHelper.getItemEnchantmentLevel(
-                        level.registryAccess()
-                                .lookupOrThrow(Registries.ENCHANTMENT)
-                                .getOrThrow(Enchantments.EFFICIENCY),
-                        tool
-                );
-                int scaled = 1 + (efficiency * Config.aoeTillingCountStep());
-                maxTillCount = Math.min(256, Math.max(1, scaled));
-
                 int tilledCount = 0;
                 boolean tilledAny = false;
+                int durabilityLimit = HoeOperationLimits.maxActions(Integer.MAX_VALUE, remainingDurability(tool), player.isCreative());
 
-                ArrayDeque<BlockPos> queue = new ArrayDeque<>();
-                LongOpenHashSet visited = new LongOpenHashSet();
-                queue.add(pos);
-                visited.add(pos.asLong());
+                int sideLength = hoeSideLength(level, tool);
+                for (FootprintBoundary.Cell cell : HoeTillingArea.cells(pos.getX(), pos.getZ(), false, sideLength)) {
+                    if (tilledCount >= durabilityLimit) {
+                        break;
+                    }
+                    BlockPos cur = new BlockPos(cell.x(), pos.getY(), cell.z());
 
-                // Avoid scanning huge areas if most blocks are not tillable (paths, etc.).
-                int searchBudget = Math.min(4096, Math.max(64, maxTillCount * 64));
-                int processed = 0;
-
-                while (!queue.isEmpty() && tilledCount < maxTillCount && processed < searchBudget) {
-                    BlockPos cur = queue.removeFirst();
-                    processed++;
-
-                    BlockState curState = level.getBlockState(cur);
-                    if (!isTillable(curState)) {
+                    if (!isTillingTarget(level, player, event.getHand(), cur, tillingMode)) {
                         continue;
                     }
 
-                    if (level.isEmptyBlock(cur.above())) {
-                        level.setBlockAndUpdate(cur, Blocks.FARMLAND.defaultBlockState());
+                    BlockState tilledState = resolveTilledState(level, player, event.getHand(), cur, tillingMode);
+                    if (tilledState != null) {
+                        applyTilledState(level, player, cur, level.getBlockState(cur), tilledState, tillingMode);
                         tilledAny = true;
                         tilledCount++;
 
@@ -184,28 +225,6 @@ public class FarmTweaks {
                             tool.hurtAndBreak(1, player, slot);
                         }
 
-                        if (tilledCount >= maxTillCount) {
-                            break;
-                        }
-                    }
-
-                    // 8-direction connectivity through tillable blocks.
-                    for (int dx = -1; dx <= 1; dx++) {
-                        for (int dz = -1; dz <= 1; dz++) {
-                            if (dx == 0 && dz == 0) {
-                                continue;
-                            }
-                            BlockPos nxt = cur.offset(dx, 0, dz);
-                            long k = nxt.asLong();
-                            if (visited.contains(k)) {
-                                continue;
-                            }
-                            BlockState ns = level.getBlockState(nxt);
-                            if (isTillable(ns)) {
-                                visited.add(k);
-                                queue.addLast(nxt);
-                            }
-                        }
                     }
                 }
 
@@ -243,6 +262,7 @@ public class FarmTweaks {
                 int scaled = 1 + (efficiency * Config.aoeHarvestCountStep());
                 // Hard cap to avoid runaway scans in very large fields.
                 maxHarvestCount = Math.min(256, Math.max(1, scaled));
+                maxHarvestCount = HoeOperationLimits.maxActions(maxHarvestCount, remainingDurability(tool), player.isCreative());
             }
         }
 
@@ -293,23 +313,17 @@ public class FarmTweaks {
                 // Prefer letting blocks with custom right-click harvest behavior handle their own drops + state.
                 // This avoids forcing an age reset (common for berry bushes and many modded crops).
                 // If the block doesn't handle use-without-item, fall back to the generic drop+reset path.
-                if (!(state.getBlock() instanceof CropBlock)) {
-                    harvestedThis = tryHarvestViaUseWithoutItem(level, player, pos);
-                }
-
-                if (!harvestedThis) {
-                    harvestedThis = completeCropHarvest(
-                            level,
-                            player,
-                            event.getHand(),
-                            pos,
-                            state,
-                            cropLike.resetState(),
-                            toolForLoot,
-                            fortuneLevel
-                    );
-                    appliedCostsAndRewards = harvestedThis;
-                }
+                harvestedThis = completeCropHarvest(
+                        level,
+                        player,
+                        event.getHand(),
+                        pos,
+                        state,
+                        cropLike.resetState(),
+                        toolForLoot,
+                        fortuneLevel
+                );
+                appliedCostsAndRewards = harvestedThis;
 
                 if (!harvestedThis) {
                     continue;
@@ -510,66 +524,117 @@ public class FarmTweaks {
         return cl != null && cl.mature();
     }
 
-    private static boolean isTillable(BlockState state) {
-        return state.is(Blocks.DIRT) || state.is(Blocks.GRASS_BLOCK) || state.is(Blocks.DIRT_PATH);
+    private static java.util.Optional<FlowerCropType> flowerType(BlockState state) {
+        if (state.is(Blocks.DANDELION)) return java.util.Optional.of(FlowerCropType.DANDELION);
+        if (state.is(Blocks.POPPY)) return java.util.Optional.of(FlowerCropType.POPPY);
+        if (state.is(Blocks.BLUE_ORCHID)) return java.util.Optional.of(FlowerCropType.BLUE_ORCHID);
+        if (state.is(Blocks.ALLIUM)) return java.util.Optional.of(FlowerCropType.ALLIUM);
+        if (state.is(Blocks.AZURE_BLUET)) return java.util.Optional.of(FlowerCropType.AZURE_BLUET);
+        if (state.is(Blocks.RED_TULIP)) return java.util.Optional.of(FlowerCropType.RED_TULIP);
+        if (state.is(Blocks.ORANGE_TULIP)) return java.util.Optional.of(FlowerCropType.ORANGE_TULIP);
+        if (state.is(Blocks.WHITE_TULIP)) return java.util.Optional.of(FlowerCropType.WHITE_TULIP);
+        if (state.is(Blocks.PINK_TULIP)) return java.util.Optional.of(FlowerCropType.PINK_TULIP);
+        if (state.is(Blocks.OXEYE_DAISY)) return java.util.Optional.of(FlowerCropType.OXEYE_DAISY);
+        if (state.is(Blocks.CORNFLOWER)) return java.util.Optional.of(FlowerCropType.CORNFLOWER);
+        if (state.is(Blocks.LILY_OF_THE_VALLEY)) return java.util.Optional.of(FlowerCropType.LILY_OF_THE_VALLEY);
+        if (state.is(Blocks.WITHER_ROSE)) return java.util.Optional.of(FlowerCropType.WITHER_ROSE);
+        return java.util.Optional.empty();
     }
 
     private static CropLike cropLike(Level level, BlockPos pos, BlockState state) {
         if (state.getBlock() instanceof CropBlock cropBlock) {
-            IntegerProperty ageProp = findAgeProperty(state);
-            BlockState reset = ageProp == null
-                    ? cropBlock.getStateForAge(0)
-                    : state.setValue(ageProp, minValue(ageProp.getPossibleValues()));
-            return new CropLike(
-                    cropBlock.isMaxAge(state),
-                    reset
-            );
-        }
-
-        IntegerProperty ageProp = findAgeProperty(state);
-        if (ageProp == null) {
-            return null;
-        }
-
-        int age = state.getValue(ageProp);
-        int max = maxValue(ageProp.getPossibleValues());
-        int min = minValue(ageProp.getPossibleValues());
-        boolean mature = age >= max;
-        BlockState reset = state.setValue(ageProp, min);
-        return new CropLike(mature, reset);
-    }
-
-    private static boolean tryHarvestViaUseWithoutItem(Level level, Player player, BlockPos pos) {
-        // This should only be called server-side.
-        BlockState state = level.getBlockState(pos);
-        BlockHitResult bhr = new BlockHitResult(Vec3.atCenterOf(pos), Direction.UP, pos, false);
-        InteractionResult r = state.useWithoutItem(level, player, bhr);
-        return r.consumesAction();
-    }
-
-    private static IntegerProperty findAgeProperty(BlockState state) {
-        for (var prop : state.getProperties()) {
-            if (prop instanceof IntegerProperty ip && "age".equals(prop.getName())) {
-                return ip;
-            }
+            return new CropLike(cropBlock.isMaxAge(state), cropBlock.getStateForAge(0));
         }
         return null;
     }
 
-    private static int minValue(Collection<Integer> values) {
-        int min = Integer.MAX_VALUE;
-        for (int v : values) {
-            min = Math.min(min, v);
-        }
-        return min == Integer.MAX_VALUE ? 0 : min;
+    private static int remainingDurability(ItemStack tool) {
+        return Math.max(0, tool.getMaxDamage() - tool.getDamageValue());
     }
 
-    private static int maxValue(Collection<Integer> values) {
-        int max = Integer.MIN_VALUE;
-        for (int v : values) {
-            max = Math.max(max, v);
+    static int hoeSideLength(Level level, ItemStack tool) {
+        if (!(tool.getItem() instanceof HoeItem hoe)) {
+            return 1;
         }
-        return max == Integer.MIN_VALUE ? 0 : max;
+        return HoeRange.sideLength(hoeTierSideLength(hoe.getTier()), efficiencyLevel(level, tool));
+    }
+
+    private static int hoeTierSideLength(Tier tier) {
+        if (tier == Tiers.WOOD) return 1;
+        if (tier == Tiers.STONE) return 2;
+        if (tier == Tiers.IRON || tier == Tiers.GOLD) return 3;
+        if (tier == Tiers.DIAMOND) return 4;
+        if (tier == Tiers.NETHERITE) return 5;
+        return 1;
+    }
+
+    static int efficiencyLevel(Level level, ItemStack tool) {
+        return EnchantmentHelper.getItemEnchantmentLevel(
+                level.registryAccess().lookupOrThrow(Registries.ENCHANTMENT).getOrThrow(Enchantments.EFFICIENCY),
+                tool
+        );
+    }
+
+    private static boolean isHoeEfficiencySpeedTarget(BlockState state) {
+        return state.is(Blocks.PUMPKIN)
+                || state.is(Blocks.MELON)
+                || state.is(Blocks.NETHER_WART)
+                || state.is(Blocks.NETHER_WART_BLOCK)
+                || state.is(Blocks.WARPED_WART_BLOCK)
+                || state.is(Blocks.BROWN_MUSHROOM_BLOCK)
+                || state.is(Blocks.RED_MUSHROOM_BLOCK)
+                || state.is(Blocks.MUSHROOM_STEM);
+    }
+
+    private static BlockState hoeTilledState(
+            Level level,
+            Player player,
+            InteractionHand hand,
+            BlockPos pos,
+            boolean simulate
+    ) {
+        BlockHitResult hitResult = new BlockHitResult(Vec3.atCenterOf(pos), Direction.UP, pos, false);
+        UseOnContext context = new UseOnContext(player, hand, hitResult);
+        return level.getBlockState(pos).getToolModifiedState(context, ItemAbilities.HOE_TILL, simulate);
+    }
+
+    private static boolean isTillingTarget(
+            Level level,
+            Player player,
+            InteractionHand hand,
+            BlockPos pos,
+            HoeTillingMode mode
+    ) {
+        return mode == HoeTillingMode.REVERT_TO_DIRT
+                ? level.getBlockState(pos).is(Blocks.FARMLAND)
+                : hoeTilledState(level, player, hand, pos, true) != null;
+    }
+
+    private static BlockState resolveTilledState(
+            Level level,
+            Player player,
+            InteractionHand hand,
+            BlockPos pos,
+            HoeTillingMode mode
+    ) {
+        return mode == HoeTillingMode.REVERT_TO_DIRT
+                ? Blocks.DIRT.defaultBlockState()
+                : hoeTilledState(level, player, hand, pos, false);
+    }
+
+    private static void applyTilledState(
+            Level level,
+            Player player,
+            BlockPos pos,
+            BlockState previousState,
+            BlockState nextState,
+            HoeTillingMode mode
+    ) {
+        if (mode.usesVanillaFarmlandReversion()) {
+            FarmBlock.turnToDirt(player, previousState, level, pos);
+        } else {
+            level.setBlockAndUpdate(pos, nextState);
+        }
     }
 
     private record CropLike(boolean mature, BlockState resetState) {}

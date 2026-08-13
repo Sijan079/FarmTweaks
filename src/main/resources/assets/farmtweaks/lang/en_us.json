@@ -3,6 +3,19 @@
   "item.farmtweaks.seed_bag": "Seed Bag",
   "item.farmtweaks.gold_seed_bag": "Gold Seed Bag",
   "item.farmtweaks.diamond_seed_bag": "Diamond Seed Bag",
+  "item.farmtweaks.dandelion_seeds": "Dandelion Seeds",
+  "item.farmtweaks.poppy_seeds": "Poppy Seeds",
+  "item.farmtweaks.blue_orchid_seeds": "Blue Orchid Seeds",
+  "item.farmtweaks.allium_seeds": "Allium Seeds",
+  "item.farmtweaks.azure_bluet_seeds": "Azure Bluet Seeds",
+  "item.farmtweaks.red_tulip_seeds": "Red Tulip Seeds",
+  "item.farmtweaks.orange_tulip_seeds": "Orange Tulip Seeds",
+  "item.farmtweaks.white_tulip_seeds": "White Tulip Seeds",
+  "item.farmtweaks.pink_tulip_seeds": "Pink Tulip Seeds",
+  "item.farmtweaks.oxeye_daisy_seeds": "Oxeye Daisy Seeds",
+  "item.farmtweaks.cornflower_seeds": "Cornflower Seeds",
+  "item.farmtweaks.lily_of_the_valley_seeds": "Lily of the Valley Seeds",
+  "item.farmtweaks.wither_rose_seeds": "Wither Rose Seeds",
 
   "config.farmtweaks.title": "Farm Tweaks",
   "config.farmtweaks.category.features": "Features",
@@ -18,6 +31,8 @@
   "config.farmtweaks.features.aoeTilling.tt": "Enables area tilling with a hoe (disabled while sneaking).",
   "config.farmtweaks.features.seedBags": "Seed bags",
   "config.farmtweaks.features.seedBags.tt": "Enables Seed Bag items and their right-click behavior.",
+  "config.farmtweaks.features.flowerSeeds": "Flower seeds",
+  "config.farmtweaks.features.flowerSeeds.tt": "Enables Flower Seeds and cultivable flower crops.",
   "config.farmtweaks.features.xpPerCropEnabled": "XP rewards",
   "config.farmtweaks.features.xpPerCropEnabled.tt": "Enables crop XP. When disabled, XP per crop is forced to 0.",
   "config.farmtweaks.features.customWaterHydrationRange": "Custom water hydration range",
@@ -37,4 +52,6 @@
   "config.farmtweaks.tuning.aoeHarvestCountStep.tt": "Max crops = 1 + (Efficiency level * this value).",
   "config.farmtweaks.tuning.aoeTillingCountStep": "AoE tilling count step",
   "config.farmtweaks.tuning.aoeTillingCountStep.tt": "Max tilled blocks = 1 + (Efficiency level * this value)."
+  ,"config.farmtweaks.tuning.flowerSeedDropChancePercent": "Flower Seed drop chance",
+  "config.farmtweaks.tuning.flowerSeedDropChancePercent.tt": "Chance for a broken vanilla small flower to drop its matching Flower Seed."
 }

@@ -4,6 +4,19 @@
     "minecraft:wheat_seeds",
     "minecraft:beetroot_seeds",
     "minecraft:melon_seeds",
-    "minecraft:pumpkin_seeds"
+    "minecraft:pumpkin_seeds",
+    "farmtweaks:dandelion_seeds",
+    "farmtweaks:poppy_seeds",
+    "farmtweaks:blue_orchid_seeds",
+    "farmtweaks:allium_seeds",
+    "farmtweaks:azure_bluet_seeds",
+    "farmtweaks:red_tulip_seeds",
+    "farmtweaks:orange_tulip_seeds",
+    "farmtweaks:white_tulip_seeds",
+    "farmtweaks:pink_tulip_seeds",
+    "farmtweaks:oxeye_daisy_seeds",
+    "farmtweaks:cornflower_seeds",
+    "farmtweaks:lily_of_the_valley_seeds",
+    "farmtweaks:wither_rose_seeds"
   ]
 }

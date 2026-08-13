@@ -2,6 +2,10 @@
   "replace": false,
   "values": [
     "minecraft:pumpkin",
-    "minecraft:melon"
+    "minecraft:carved_pumpkin",
+    "minecraft:melon",
+    "minecraft:brown_mushroom_block",
+    "minecraft:red_mushroom_block",
+    "minecraft:mushroom_stem"
   ]
 }
