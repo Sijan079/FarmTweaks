@@ -1,32 +1,99 @@
-# FarmTweaks
+<p align="center">
+  <img src="docs/images/farmtweaks-hero.png" alt="A warm voxel farm at sunset, with crops, a barn, and an outlined planting area" width="100%">
+</p>
 
-FarmTweaks is a NeoForge 1.21.1 mod that makes everyday farming quicker while keeping its interactions recognizably vanilla.
+<h1 align="center">Farm Tweaks</h1>
 
-## Current Features
+<p align="center">
+  <strong>Faster, friendlier farming that still feels like vanilla Minecraft.</strong><br>
+  Right-click to harvest. Work fields with better hoes. Plant more with Seed Bags.
+</p>
 
-- Right-click harvest mature crops, nether wart, and cocoa with automatic replanting, optional Fortune-aware drops, crop XP, and connected AoE harvesting.
-- Tiered Seed Bags that store one plantable type and plant a charged target area. Their coverage is previewed with a bright perimeter outline.
-- Tiered hoe tilling and farmland reversion: Wood starts at 1×1, Stone 2×2, Iron/Gold 3×3, Diamond 4×4, and Netherite 5×5. Hoe tier alone defines this footprint; Efficiency extends connected crop harvesting instead. Sneaking always targets one block.
-- Farmland cannot be trampled, while normal dehydration and blocked-above reversion still work. A hoe can deliberately revert targeted farmland to dirt without pushing the player into the new block.
-- Hoe coverage previews that show only the outer boundary of the exact till, revert, or harvest area.
-- Cultivable seeds and farmland crops for all current vanilla small flowers, including Seed Bag and existing harvest-system compatibility.
-- Hoe mining support for pumpkins, carved pumpkins, melons, mushroom blocks/stems, and the existing wart blocks. Pumpkin, melon, and mushroom blocks remain axe-minable too.
-- Pumpkin blocks yield Fortune-affected Pumpkin Slices (while Silk Touch preserves the block); pumpkin pie and pumpkin-seed recipes use compatible slices, while jack-o'-lanterns still use carved pumpkins.
-- Configurable farmland hydration range, including optional waterlogged sources.
+<p align="center">
+  <a href="https://github.com/Sijan079/FarmTweaks/releases"><img alt="Latest release" src="https://img.shields.io/github/v/release/Sijan079/FarmTweaks?label=release&color=6aa84f"></a>
+  <a href="https://github.com/Sijan079/FarmTweaks"><img alt="Minecraft 1.21.1" src="https://img.shields.io/badge/Minecraft-1.21.1-3b8526"></a>
+  <a href="https://neoforged.net/"><img alt="NeoForge" src="https://img.shields.io/badge/loader-NeoForge-ff7e2d"></a>
+</p>
 
-## Roadmap
+> [!NOTE]
+> Farm Tweaks is currently for **Minecraft Java 1.21.1** with **NeoForge 21.1.219**.
 
-These are the currently open GitHub issues. They are intentionally summarized here; the linked issues remain the source of truth for detailed acceptance criteria.
+## Make your farm flow
 
-- [ ] [#1 — Compacted produce storage](https://github.com/Sijan079/FarmTweaks/issues/1): reversible 3×3 storage blocks for common farm produce, reducing bulk-storage clutter without duplicating hay bales for wheat.
-- [ ] [#2 — Cultivable vanilla small flowers](https://github.com/Sijan079/FarmTweaks/issues/2) *(in progress)*: complete and polish the matching seed, crop, harvesting, and Seed Bag loop for vanilla small flowers.
-- [ ] [#3 — Mycelium propagation and mushroom growth](https://github.com/Sijan079/FarmTweaks/issues/3): let bone meal spread mycelium to suitable nearby soil and occasionally sprout mushrooms.
-- [ ] [#4 — Cultivated first mycelium](https://github.com/Sijan079/FarmTweaks/issues/4): provide a mushroom-and-bone-meal path from coarse dirt/podzol to a player's first mycelium.
-- [ ] [#5 — Timed composter](https://github.com/Sijan079/FarmTweaks/issues/5): turn the composter into a small inventory-based processor that decomposes inputs over time and safely holds finished rewards.
-- [ ] [#6 — Composter rewards and mushroom bonus](https://github.com/Sijan079/FarmTweaks/issues/6): add weighted compost rewards, with mushrooms increasing the chance of Rich Soil while bone meal remains the common result.
-- [ ] [#7 — Rich Soil and Rich Farmland](https://github.com/Sijan079/FarmTweaks/issues/7): a compost-earned premium soil that can be tilled into moderately faster-growing farmland without replacing ordinary farming.
-- [ ] [#8 — Seed Bag right-click dragging](https://github.com/Sijan079/FarmTweaks/issues/8): bulk deposit and withdrawal through vanilla inventory screens, with optional Mouse Tweaks compatibility and no required dependency.
+| Harvest in one motion | Shape a field faster | Plant at scale |
+| :---: | :---: | :---: |
+| Right-click a mature crop to harvest and replant it. Connected crops can be gathered with a hoe. | Each hoe tier has a practical tilling footprint, with a visible boundary before you commit. | Seed Bags hold one plantable type and fill a charged area with a bright perimeter preview. |
 
-## Development
+### Harvest without the replanting chore
 
-Run `./gradlew build` for the standard validation build, or `./gradlew runClient` to launch the development client.
+Right-click mature crops to harvest them while keeping the field growing. Hoe harvesting can spread through connected crops, and Efficiency raises its harvest budget.
+
+- Crop XP and Fortune behavior are kept crop-specific instead of applying a blanket multiplier.
+- Sugar cane keeps its base planted; harvest an upper stalk to collect it and every segment above it.
+- Sweet berry bushes yield berries and regrow; cocoa replants itself after harvest.
+- Sneak when you need a single, precise harvest.
+
+### Put every hoe to work
+
+Hold a hoe and press **Ctrl + right-click** to cycle its mode:
+
+| Mode | What it does |
+| --- | --- |
+| **Till** | Tills the displayed area. |
+| **Untill** | Deliberately returns farmland in the displayed area to dirt. |
+| **None** | Leaves normal vanilla hoe land-use behavior in control. |
+
+Hoe tier determines the field size: Wood **1×1**, Stone **2×2**, Iron/Gold **3×3**, Diamond **4×4**, and Netherite **5×5**. Sneaking always limits the action to the targeted block. Farm Tweaks also prevents farmland trampling while preserving normal dehydration and blocked-above reversion.
+
+### Grow more than food
+
+Cultivate vanilla small flowers alongside your regular crops, or build a pumpkin loop that is easier to use in a working farm:
+
+- Pumpkins drop Fortune-affected Pumpkin Slices unless harvested with Silk Touch.
+- Craft 1 slice into a pumpkin seed, 2 slices with sugar and an egg into pumpkin pie, or 9 slices into a pumpkin block.
+- When Farmer's Delight is present, Farm Tweaks uses its Pumpkin Slice; it remains an optional integration.
+
+## Install
+
+1. Install **Minecraft Java 1.21.1** and **NeoForge 21.1.219**.
+2. Download the matching Farm Tweaks JAR from [GitHub Releases](https://github.com/Sijan079/FarmTweaks/releases).
+3. Place the JAR in your instance's `mods` folder and launch the game.
+
+Farm Tweaks is designed for servers and clients using the same mod version. Optional integrations such as Cloth Config and Serene Seasons remain optional.
+
+## Configuration and compatibility
+
+The generated configuration file is `config/farmtweaks.toml`. It includes switches and tuning for harvesting, crop XP, connected-harvest limits, Seed Bags, and farmland hydration. If Cloth Config is installed, Farm Tweaks adds an in-game configuration screen.
+
+Datapacks can extend behavior through Farm Tweaks tags for seed-like items, Seed Bag plantables, and generic right-click-harvestable crops.
+
+## In development
+
+Farm Tweaks is actively evolving. Browse the [open roadmap issues](https://github.com/Sijan079/FarmTweaks/issues) or see the code-oriented [feature inventory](docs/features/feature-inventory.md). Player-facing release notes live in [CHANGELOG.md](CHANGELOG.md).
+
+<details>
+<summary><strong>For contributors</strong></summary>
+
+<br>
+
+This is a NeoForge 1.21.1 mod built with Gradle and Java 21.
+
+```powershell
+.\gradlew.bat build       # Run the standard validation build
+.\gradlew.bat runClient   # Launch a development client
+.\gradlew.bat runGameTestServer # Run NeoForge GameTests
+```
+
+Key project locations:
+
+```text
+src/main/java/com/sncial/farmtweaks/  # Common mod code
+src/main/resources/                   # Assets, recipes, tags, and metadata
+src/test/java/com/sncial/farmtweaks/  # Unit tests
+docs/                                 # Feature notes and testing checklists
+```
+</details>
+
+## License
+
+All Rights Reserved. See `gradle.properties` for the current project metadata.
