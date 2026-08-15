@@ -133,6 +133,10 @@ configurations {
 dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter:5.11.0'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    // Optional client-side config screen enhancement for NeoForge 1.21.1.
+    compileOnly 'maven.modrinth:cloth-config:15.0.140+neoforge'
+    localRuntime 'maven.modrinth:cloth-config:15.0.140+neoforge'
 }
 
 tasks.named('test', Test).configure {

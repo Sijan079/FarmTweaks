@@ -35,15 +35,17 @@ Right-click mature crops to harvest them while keeping the field growing. Hoe ha
 
 ### Put every hoe to work
 
-Hold a hoe and press **Ctrl + right-click** to cycle its mode:
+Hold a hoe and press **Ctrl + scroll** to cycle its mode. Scroll down moves forward; scroll up moves backward.
 
 | Mode | What it does |
 | --- | --- |
 | **Till** | Tills the displayed area. |
 | **Untill** | Deliberately returns farmland in the displayed area to dirt. |
-| **None** | Leaves normal vanilla hoe land-use behavior in control. |
+| **Harvest** | Keeps the hoe in harvest mode and suppresses its tilling action. |
 
-Hoe tier determines the field size: Wood **1×1**, Stone **2×2**, Iron/Gold **3×3**, Diamond **4×4**, and Netherite **5×5**. Sneaking always limits the action to the targeted block. Farm Tweaks also prevents farmland trampling while preserving normal dehydration and blocked-above reversion.
+Hoe tier determines the centered field size: Wood **1×1**, Stone **3×3**, Iron/Gold **5×5**, Diamond **7×7**, and Netherite **9×9** by default. Sneaking always limits the action to the targeted block. Farm Tweaks can also prevent farmland trampling while preserving normal dehydration and blocked-above reversion.
+
+Hold a Seed Bag and use **Ctrl + scroll** to choose square or radial planting for that individual bag. The selected shape is saved on the bag.
 
 ### Grow more than food
 
@@ -63,7 +65,7 @@ Farm Tweaks is designed for servers and clients using the same mod version. Opti
 
 ## Configuration and compatibility
 
-The generated configuration file is `config/farmtweaks.toml`. It includes switches and tuning for harvesting, crop XP, connected-harvest limits, Seed Bags, and farmland hydration. If Cloth Config is installed, Farm Tweaks adds an in-game configuration screen.
+The shared gameplay configuration is `config/farmtweaks.toml`; it includes harvesting, pumpkin recipes and drops, hoe actions, tiered tilling ranges, Seed Bags, farmland trampling, hydration, flowers, and crop XP. Client preferences such as the mode HUD, Ctrl+scroll switching, and scroll inversion live in `config/farmtweaks-client.toml`. If Cloth Config is installed, Farm Tweaks adds an in-game configuration screen with dedicated Hoe Actions and Controls tabs.
 
 Datapacks can extend behavior through Farm Tweaks tags for seed-like items, Seed Bag plantables, and generic right-click-harvestable crops.
 

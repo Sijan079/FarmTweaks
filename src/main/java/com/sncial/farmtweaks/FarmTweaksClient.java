@@ -5,13 +5,24 @@ import net.minecraft.client.renderer.item.ItemProperties;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
+import net.neoforged.fml.ModContainer;
+import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 import net.neoforged.neoforge.client.event.RegisterItemDecorationsEvent;
 
 @EventBusSubscriber(modid = FarmTweaks.MODID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
+@Mod(value = FarmTweaks.MODID, dist = Dist.CLIENT)
 public final class FarmTweaksClient {
-    private FarmTweaksClient() {}
+    public FarmTweaksClient(ModContainer modContainer) {
+        registerConfigScreen(modContainer);
+    }
+
+    public static void registerConfigScreen(ModContainer modContainer) {
+        IConfigScreenFactory factory = (minecraft, parent) -> FarmTweaksClothConfigScreen.create(parent);
+        modContainer.registerExtensionPoint(IConfigScreenFactory.class, factory);
+    }
 
     @SubscribeEvent
     public static void onClientSetup(FMLClientSetupEvent event) {

@@ -27,3 +27,10 @@ config="${mod_id}.mixins.json"
     versionRange="${minecraft_version_range}"
     ordering="NONE"
     side="BOTH"
+
+[[dependencies.${mod_id}]]
+    modId="cloth_config"
+    type="required"
+    versionRange="[15.0.140,)"
+    ordering="AFTER"
+    side="CLIENT"

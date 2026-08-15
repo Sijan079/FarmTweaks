@@ -6,18 +6,14 @@ import org.junit.jupiter.api.Test;
 
 class HoeRangeTest {
     @Test
-    void tier_base_sizes_match_the_requested_ranges() {
-        assertEquals(1, HoeRange.tillSideLength(1));
-        assertEquals(2, HoeRange.tillSideLength(2));
-        assertEquals(3, HoeRange.tillSideLength(3));
-        assertEquals(4, HoeRange.tillSideLength(4));
-        assertEquals(5, HoeRange.tillSideLength(5));
+    void added_range_keeps_the_vanilla_target_at_zero() {
+        assertEquals(0, HoeRange.tillRadius(0));
+        assertEquals(1, HoeRange.tillRadius(1));
+        assertEquals(4, HoeRange.tillRadius(4));
     }
 
     @Test
-    void tilling_side_length_ignores_efficiency() {
-        assertEquals(1, HoeRange.tillSideLength(1));
-        assertEquals(3, HoeRange.tillSideLength(3));
-        assertEquals(5, HoeRange.tillSideLength(5));
+    void added_range_never_becomes_negative() {
+        assertEquals(0, HoeRange.tillRadius(-1));
     }
 }

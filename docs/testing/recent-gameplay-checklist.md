@@ -4,17 +4,27 @@ Use the development client to manually verify the currently uncommitted FarmTwea
 
 ## Hoe coverage and farmland
 
-- Verify the hoe footprint by tier: Wood 1x1, Stone 2x2, Iron/Gold 3x3, Diamond 4x4, and Netherite 5x5.
+- Ctrl+scroll while holding a hoe. Scroll down should cycle Till → Untill → Harvest → Till; scroll up must reverse the order. The mode persists on that individual hoe.
+- In Till mode, dirt-like targets become farmland. In Untill mode, only farmland becomes dirt. Harvest mode suppresses tilling.
+- Verify the default centered hoe footprint by tier: Wood 1x1, Stone 3x3, Iron/Gold 5x5, Diamond 7x7, and Netherite 9x9.
 - Verify Efficiency does not change the till/revert footprint. It extends connected crop harvesting only; sneaking always targets one block.
-- Verify the bright outline shows only the outer boundary of the exact till, revert, or harvest area.
+- Verify the bright outline shows only the outer boundary of the exact till or farmland-reversion area; crop harvesting has no hoe boundary preview.
 - Target existing farmland with the hoe reversion action. It should become dirt without moving the player into the new block.
-- Jump on farmland. It must not revert from trampling, but it must still revert normally when dehydrated or blocked above.
+- Toggle Prevent farmland trampling. With it enabled, jumping on farmland must not revert it; with it disabled, vanilla trampling resumes. In both cases farmland must still revert normally when dehydrated or blocked above.
+
+## Seed Bag modes and controls
+
+- Hold a Seed Bag and Ctrl+scroll. Confirm it switches between square and radial planting and that the selection persists on the individual bag.
+- Confirm the targeted-empty-farmland preview matches the selected planting shape.
+- In the Controls tab, disable Show held-item mode and confirm the hoe/Seed Bag status text disappears. Disable Ctrl+scroll switching and confirm scroll no longer changes modes. Enable inversion and confirm scroll direction reverses.
 
 ## Harvesting and drops
 
 - Right-click a mature connected field with a hoe. Mature crops should harvest, replant at their initial age, consume hoe durability, and respect the configured AoE limit.
 - Test mature nether wart and cocoa. Both should right-click harvest and reset to age 0; cocoa must remain attached to the same jungle log and keep its facing.
-- Compare Fortune behavior: carrots and potatoes rely only on vanilla drops; seed-replanting crops and cocoa receive the FarmTweaks extra bonus; nether wart keeps its vanilla loot-table Fortune behavior.
+- Right-click sugar cane. It should harvest the clicked upper segment and any segments above it, always leaving the bottom stalk planted; it does not use connected AoE harvesting. Mature sweet berry bushes should yield 3-4 berries and regrow from age 1. Both are excluded from AoE and Fortune.
+- With crop XP enabled, each harvested sugar-cane segment, nether wart, cocoa plant, and mature sweet berry bush should award the configured crop XP.
+- Compare Fortune behavior: carrots and potatoes rely only on vanilla drops; seed-replanting crops receive the FarmTweaks extra bonus; nether wart keeps its vanilla loot-table Fortune behavior. Cocoa, sugar cane, and sweet berries do not receive FarmTweaks Fortune bonuses.
 
 ## Pumpkin slices and recipes
 

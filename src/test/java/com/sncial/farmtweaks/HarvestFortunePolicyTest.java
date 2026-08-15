@@ -13,9 +13,8 @@ class HarvestFortunePolicyTest {
     }
 
     @Test
-    void grants_the_bonus_to_cocoa_when_its_vanilla_loot_ignores_fortune() {
-        assertTrue(HarvestFortunePolicy.hasExtraBonus(false, true, 1));
-        assertFalse(HarvestFortunePolicy.hasExtraBonus(false, true, 0));
+    void does_not_grant_the_bonus_to_cocoa() {
+        assertFalse(HarvestFortunePolicy.hasExtraBonus(false, true, 5));
     }
 
     @Test

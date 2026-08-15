@@ -4,16 +4,23 @@ All notable player-facing changes to Farm Tweaks are recorded here. This project
 
 ## [Unreleased]
 
+## [0.7.2] - 2026-08-15
+
 ### Added
 
 - Right-click harvesting for sugar cane, mature cocoa, and mature sweet berry bushes, each with its own vanilla-friendly replant and yield rules.
-- Per-hoe Till, Untill, and None modes. Press Ctrl + right-click while holding a hoe to cycle modes; the current mode appears in the tooltip.
-- Unit coverage for special crop yields, harvest experience, and the new hoe modes.
+- Per-hoe Till, Untill, and Harvest modes with Ctrl+scroll cycling and held-item status text.
+- A dedicated Hoe Actions configuration tab with per-tier centered tilling ranges.
+- Per-Seed-Bag square/radial planting modes, switched with Ctrl+scroll and persisted on the bag.
+- A Controls tab with mode-HUD, Ctrl+scroll, and scroll-inversion preferences stored in a client-only config.
+- Configurable farmland-trampling prevention and an in-game Cloth Config screen.
+- Unit coverage for special crop yields, harvest experience, hoe mode, tier-range, and client-scroll behavior.
 
 ### Changed
 
 - Cocoa, sugar cane, and sweet berries are now deliberately excluded from connected area harvesting and Farm Tweaks' extra Fortune bonus.
-- Hoe previews now represent tilling and farmland reversion only; crop harvesting does not show a boundary preview.
+- Hoe previews now represent tiered, centered tilling and farmland reversion only; crop harvesting does not show a boundary preview.
+- Pumpkin recipes, including the restored vanilla pumpkin-seed recipe when slice recipes are disabled, now respect the configured drop and recipe choices.
 - Pumpkin pie now uses two Pumpkin Slices, sugar, and an egg, while one Pumpkin Slice crafts one pumpkin seed and nine craft a pumpkin block.
 
 ### Removed
@@ -63,7 +70,8 @@ All notable player-facing changes to Farm Tweaks are recorded here. This project
 
 - Corrected the release-command process invocation.
 
-[Unreleased]: https://github.com/Sijan079/FarmTweaks/compare/v0.7.1...HEAD
+[Unreleased]: https://github.com/Sijan079/FarmTweaks/compare/v0.7.2...HEAD
+[0.7.2]: https://github.com/Sijan079/FarmTweaks/compare/v0.7.1...v0.7.2
 [0.7.1]: https://github.com/Sijan079/FarmTweaks/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/Sijan079/FarmTweaks/compare/v0.6.8...v0.7.0
 [0.6.8]: https://github.com/Sijan079/FarmTweaks/compare/v0.6.7...v0.6.8

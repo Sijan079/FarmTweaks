@@ -8,6 +8,6 @@ final class HarvestFortunePolicy {
     }
 
     static boolean hasExtraBonus(boolean replantedWithSeed, boolean cocoa, int fortuneLevel) {
-        return (replantedWithSeed || cocoa) && fortuneLevel > 0;
+        return replantedWithSeed && !cocoa && fortuneLevel > 0;
     }
 }

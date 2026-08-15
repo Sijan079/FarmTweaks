@@ -1,158 +1,53 @@
 # FarmTweaks Feature Inventory
 
-This document tracks the farming features currently implemented in the source code and the feature ideas that are still unimplemented. It is an implementation snapshot, not a replacement for detailed feature specifications. Update it when a feature changes status.
-
-Status is based on the source and resources currently in this repository.
+This is an implementation snapshot. GitHub Issues and detailed feature specifications remain the source of truth for future work.
 
 ## Implemented Features
 
-### 1. Right-click crop harvesting
+### Right-click harvesting
 
-- Harvest mature vanilla-style crops by right-clicking them.
-- Automatically reset harvested crops to their initial growth state.
-- Prefer a crop block's own `useWithoutItem` behavior when available.
-- Support generic modded crops with an integer `age` property.
-- Optionally restrict generic age-crop harvesting to the `farmtweaks:right_click_harvestable` block tag.
-- Preserve normal block break/replant events and harvest statistics where possible.
-- Respect the `rightClickHarvest`, `genericAgeCropHarvest`, and `harvestWhitelistTagOnly` configuration options.
+- Mature vanilla crops, FarmTweaks flower crops, nether wart, and cocoa replant automatically after harvest.
+- Cocoa is single-target and yields 5-6 beans total; one bean is replanted, leaving 4-5 for the player.
+- Sugar cane harvests the clicked upper segment and every segment above it, always preserving the bottom stalk.
+- Mature sweet berry bushes yield 3-4 berries and reset to age 1.
+- Cocoa, sugar cane, and sweet berries are intentionally excluded from connected AoE harvesting.
+- Crop harvesting preserves break/replant events, stats, configured crop XP, and hoe durability where applicable.
 
-Source: `FarmTweaks.java`, `Config.java`
+### Fortune policy
 
-### 2. Hoe Fortune crop bonuses
+- Carrots and potatoes use their vanilla Fortune behavior only.
+- FarmTweaks applies its extra Fortune bonus only to eligible seed-replanting crops.
+- Cocoa, sugar cane, and sweet berries do not receive a FarmTweaks Fortune bonus.
+- Nether wart uses its vanilla loot-table Fortune behavior.
 
-- Apply a Fortune-style bonus to eligible non-seed crop drops when harvesting with a hoe.
-- Exclude seed-like drops using the `farmtweaks:seedlike` item tag.
-- Gate the extra Fortune bonus by Serene Seasons crop fertility when configured.
-- Keep the Serene Seasons dependency optional through reflection.
+### Hoe tools and previews
 
-Source: `FarmTweaks.java`, `SereneSeasonsCompat.java`
+- Till and farmland-reversion footprints use ordered, centered additive ranges. Defaults are Wood 1x1, Stone 3x3, Iron/Gold 5x5, Diamond 7x7, and Netherite 9x9; ranges can scale as far as Netherite 19x19.
+- Each hoe stores a Till, Untill, or Harvest mode. Ctrl+scroll cycles the held hoe; down is forward and up is backward by default. Harvest mode suppresses tilling.
+- Efficiency increases only the connected crop-harvest budget.
+- Sneaking limits tilling/reversion and harvest to the targeted block.
+- Hoe previews render tilling/reversion boundaries, and Seed Bag previews render planting boundaries. Crop harvesting has no boundary preview.
+- Farmland trampling prevention is configurable; dehydration and a blocking block above continue to revert farmland normally. Hoe reversion does not displace the player into dirt.
 
-### 3. Area-of-effect harvesting
+### Pumpkin slices
 
-- Flood-fill connected crop areas from the clicked crop.
-- Traverse through mature and immature crops so connected mature crops can be harvested.
-- Traverse across a one-block air gap to reach nearby mature crops.
-- Scale the harvest limit using the hoe's Efficiency level.
-- Disable area harvesting while sneaking.
-- Clamp the maximum operation size to protect against runaway scans.
+- Pumpkins broken without Silk Touch yield 3-9 Pumpkin Slices, including Fortune scaling. Silk Touch keeps the pumpkin block.
+- FarmTweaks uses Farmer's Delight Pumpkin Slices when that optional mod is present; otherwise it uses the built-in Pumpkin Slice.
+- One slice crafts one pumpkin seed; two slices, sugar, and an egg craft pumpkin pie; nine slices craft one pumpkin block.
+- The jack-o'-lantern recipe remains unchanged.
 
-Source: `FarmTweaks.java`, `Config.java`
+### Other existing systems
 
-### 4. Area-of-effect tilling
+- Tiered Seed Bags store one plantable item type and plant a charged target area. Ctrl+scroll switches each bag between persisted square and radial planting shapes.
+- Vanilla small flowers have cultivation, Seed Bag, and harvest support.
+- Optional custom farmland hydration range and optional Cloth Config screen support remain available. The Cloth screen separates Hoe Actions and client Controls from gameplay settings.
+- Pumpkins, carved pumpkins, melons, mushroom blocks/stems, and wart blocks are hoe-mineable. Pumpkin, melon, and mushroom blocks/stems remain axe-mineable.
 
-- Convert supported dirt-like blocks to farmland with a hoe.
-- Flood-fill connected tillable blocks using 8-direction horizontal connectivity.
-- Scale the tilling limit using the hoe's Efficiency level.
-- Damage the hoe for non-creative players.
-- Disable area tilling while sneaking.
-- Clamp the maximum operation size and search budget.
+## Verification
 
-Source: `FarmTweaks.java`, `Config.java`
+Unit tests cover hoe range, harvest maturity, Fortune policy, special crop yields, harvest XP, and pumpkin-slice rules. The manual gameplay checklist is in `docs/testing/recent-gameplay-checklist.md`.
 
-### 5. Crop experience rewards
+## Planned Features
 
-- Spawn configurable experience rewards when mature crops are harvested.
-- Allow crop XP rewards to be disabled independently of the configured amount.
-- Add an optional extra XP bonus for in-season crops when Serene Seasons is installed.
-
-Source: `FarmTweaks.java`, `Config.java`, `SereneSeasonsCompat.java`
-
-### 6. Seed Bag item
-
-- Register a craftable, single-stack Seed Bag item.
-- Store up to 640 items of one exact seed/item type.
-- Accept items in the `c:seeds` tag and items in `farmtweaks:seed_bag_plantables`.
-- Deposit seeds into the bag through inventory slot interactions.
-- Withdraw up to one stack from the bag into an empty inventory slot.
-- Show stored seed type and quantity in the tooltip.
-- Show fill progress using the item bar.
-- Allow Efficiency enchantments and use Efficiency to increase planting radius.
-- Plant stored seeds by right-clicking farmland or other valid planting locations.
-- Disable area planting while sneaking.
-- Preserve the bag contents using item custom data.
-
-Source: `SeedBagItem.java`, `FarmTweaks.java`
-
-### 7. Seed Bag compatibility behavior
-
-- Preserve BundleItem behavior so Mouse Tweaks-style RMB dragging remains compatible with the bag’s inventory interactions.
-- Deposit stored seeds into a `selling_bin` block entity from the `selling_bin` namespace while sneaking.
-- Use the vanilla `Container` interface for Selling Bin insertion without a hard dependency on its internals.
-
-Source: `SeedBagItem.java`
-
-### 8. Custom farmland hydration range
-
-- Optionally replace vanilla farmland water detection with a configurable horizontal and upward vertical range.
-- Use NeoForge/Minecraft hydration checks for water sources.
-- Optionally include waterlogged blocks as hydration sources.
-- Leave the feature disabled by default.
-
-Source: `FarmBlockHydrationMixin.java`, `Config.java`
-
-### 9. Tool tag adjustments
-
-- Make pumpkins and melons mineable with hoes through the Minecraft tool tags.
-- Remove those blocks from the axe mineable tag in the project resources.
-
-Resources: `src/main/resources/data/minecraft/tags/block/`
-
-### 10. Optional configuration UI
-
-- Register an in-game configuration screen when Cloth Config is installed.
-- Keep Cloth Config and client-only classes optional through reflection.
-- Expose feature toggles, compatibility toggles, and tuning values in the UI.
-- Continue to work on dedicated servers and without Cloth Config installed.
-
-Source: `ClothConfigCompat.java`, `FarmTweaks.java`
-
-### 11. NeoForge configuration and data-driven extension points
-
-- Generate the standard `config/farmtweaks.toml` configuration through NeoForge.
-- Provide datapack-friendly tags for seed-like items, Seed Bag plantables, and generic harvest whitelisting.
-- Register the Seed Bag and Farm Tweaks creative tab.
-- Provide Seed Bag models, textures, recipe, advancement, and translations.
-
-Source/resources: `Config.java`, `FarmTweaks.java`, `src/main/resources/`
-
-## Unimplemented or Planned Features
-
-### 1. Little Joys harvest integration
-
-- Trigger or apply Little Joys harvest-event chances when harvesting by hand.
-- Trigger or apply Little Joys harvest-event chances when harvesting with a hoe.
-
-Status: Planned; no Little Joys integration is present in the current source.
-
-### 2. Seed Bag planting mode switcher
-
-- Add square planting mode.
-- Add radial planting mode.
-- Add point-to-point planting mode.
-- Switch planting modes with the mouse wheel while holding the Seed Bag.
-
-Status: Planned; current planting uses the existing radius-based pattern only.
-
-### 3. Custom pumpkin slice drops
-
-- Add custom pumpkin slice drops when breaking pumpkin blocks.
-- Detect Farmers' Delight automatically when installed.
-- Use Farmers' Delight’s Pumpkin Slice item when available.
-
-Status: Planned; current resources only adjust pumpkin mining-tool tags.
-
-## Clarifications and Known Documentation Drift
-
-- The root README describes right-clicking in the air as a Seed Bag inventory-deposit action. The current `SeedBagItem.use` method intentionally does not implement that behavior; deposits currently happen through inventory slot interactions.
-- The root README lists Mouse Tweaks compatibility and Selling Bin dumping under future plans, but both are implemented in `SeedBagItem.java`.
-- No automated test suite was found under `src/test` during this inventory pass. Runtime behavior should be verified with the relevant NeoForge client/server or GameTest task when changes are made.
-
-## Updating This Inventory
-
-When implementing a feature:
-
-1. Move it from **Unimplemented or Planned Features** to **Implemented Features**.
-2. Add the important sub-behaviors beneath the main feature.
-3. Update source/resource references if the implementation moves.
-4. Add or update a detailed specification under `docs/features/` when the feature is substantial.
-5. Record deferred work or limitations in the feature’s implementation notes.
+- Little Joys harvest integration.
+- The open GitHub Issue roadmap listed in the root README.

@@ -17,6 +17,7 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.ChatFormatting;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.stats.Stats;
 import net.minecraft.tags.TagKey;
@@ -46,6 +47,7 @@ import net.minecraft.world.level.block.CocoaBlock;
 import net.minecraft.world.level.block.CropBlock;
 import net.minecraft.world.level.block.NetherWartBlock;
 import net.minecraft.world.level.block.FarmBlock;
+import net.minecraft.world.level.block.SweetBerryBushBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.item.crafting.CraftingBookCategory;
 import net.minecraft.world.item.crafting.Ingredient;
@@ -60,12 +62,14 @@ import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.common.CommonHooks;
 import net.neoforged.neoforge.common.ItemAbilities;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.common.util.BlockSnapshot;
 import net.neoforged.neoforge.event.EventHooks;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
+import net.neoforged.neoforge.event.entity.player.ItemTooltipEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.level.BlockEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
@@ -87,6 +91,7 @@ public class FarmTweaks {
             ResourceLocation.fromNamespaceAndPath(MODID, "pumpkin_slices")
     );
     private static final ResourceLocation VANILLA_PUMPKIN_PIE_RECIPE = ResourceLocation.withDefaultNamespace("pumpkin_pie");
+    private static final ResourceLocation VANILLA_PUMPKIN_SEEDS_RECIPE = ResourceLocation.withDefaultNamespace("pumpkin_seeds");
     private static final ResourceLocation FARMERS_DELIGHT_PUMPKIN_SLICE = ResourceLocation.fromNamespaceAndPath("farmersdelight", "pumpkin_slice");
 
     public static final DeferredRegister.Blocks BLOCKS = DeferredRegister.createBlocks(MODID);
@@ -126,25 +131,60 @@ public class FarmTweaks {
 
     public FarmTweaks(IEventBus modEventBus, ModContainer modContainer) {
         modEventBus.addListener(this::commonSetup);
+        modEventBus.addListener(this::registerPayloadHandlers);
 
         BLOCKS.register(modEventBus);
         ITEMS.register(modEventBus);
         CREATIVE_MODE_TABS.register(modEventBus);
 
         modContainer.registerConfig(ModConfig.Type.COMMON, Config.SPEC, "farmtweaks.toml");
+        modContainer.registerConfig(ModConfig.Type.CLIENT, ClientConfig.SPEC, "farmtweaks-client.toml");
 
         NeoForge.EVENT_BUS.register(this);
     }
 
+    private void registerPayloadHandlers(RegisterPayloadHandlersEvent event) {
+        var registrar = event.registrar("2");
+        registrar.playToServer(CycleHoeModePayload.TYPE, CycleHoeModePayload.STREAM_CODEC, (payload, context) ->
+                context.enqueueWork(() -> {
+                    Player player = context.player();
+                    ItemStack hoe = player.getMainHandItem();
+                    if (hoe.getItem() instanceof HoeItem) {
+                        HoeModeData.cycle(hoe, payload.forward());
+                    }
+                })
+        );
+        registrar.playToServer(CycleSeedBagShapePayload.TYPE, CycleSeedBagShapePayload.STREAM_CODEC, (payload, context) ->
+                context.enqueueWork(() -> {
+                    ItemStack bag = context.player().getMainHandItem();
+                    if (bag.getItem() instanceof SeedBagItem) {
+                        SeedBagItem.cyclePlantingShape(bag, payload.forward());
+                    }
+                })
+        );
+    }
+
     @SubscribeEvent
     public void onServerStarting(ServerStartingEvent event) {
+        boolean overridePumpkinRecipes = Config.enablePumpkinSlices() && Config.overridePumpkinRecipes();
         var recipeManager = event.getServer().getRecipeManager();
         List<RecipeHolder<?>> recipes = new ArrayList<>();
         for (RecipeHolder<?> recipe : recipeManager.getRecipes()) {
             ResourceLocation id = recipe.id();
-            if (!PumpkinRecipePolicy.replacesVanillaRecipe(id.getNamespace(), id.getPath())) {
+            if ((!overridePumpkinRecipes && id.equals(VANILLA_PUMPKIN_SEEDS_RECIPE))
+                    || (overridePumpkinRecipes && PumpkinRecipePolicy.replacesVanillaRecipe(id.getNamespace(), id.getPath()))) {
+                continue;
+            }
+            {
                 recipes.add(recipe);
             }
+        }
+
+        if (!overridePumpkinRecipes) {
+            recipes.add(new RecipeHolder<>(VANILLA_PUMPKIN_SEEDS_RECIPE, new ShapelessRecipe("", CraftingBookCategory.MISC,
+                    new ItemStack(Items.PUMPKIN_SEEDS, 4), NonNullList.of(Ingredient.EMPTY, Ingredient.of(Items.PUMPKIN)))));
+            recipeManager.replaceRecipes(recipes);
+            return;
         }
 
         NonNullList<Ingredient> ingredients = NonNullList.of(
@@ -181,7 +221,7 @@ public class FarmTweaks {
 
     @SubscribeEvent
     public void onFarmlandTrample(BlockEvent.FarmlandTrampleEvent event) {
-        if (FarmlandProtection.cancelTrample()) {
+        if (FarmlandProtection.cancelTrample(Config.preventFarmlandTrampling())) {
             event.setCanceled(true);
         }
     }
@@ -222,9 +262,26 @@ public class FarmTweaks {
         if (Config.enableAoETilling() && tool.getItem() instanceof HoeItem) {
             BlockPos pos = event.getPos();
             BlockState state = level.getBlockState(pos);
-            HoeTillingMode tillingMode = HoeTillingMode.fromTarget(state.is(Blocks.FARMLAND));
+            HoeTillingMode tillingMode = HoeModeData.read(tool);
 
-            if (!level.isClientSide() && isTillingTarget(level, player, event.getHand(), pos, tillingMode)) {
+            if (tillingMode.allowsTilling() && level.isClientSide()
+                    && HoeInteractionPolicy.ownsVanillaTillingAction(
+                    Config.enableAoETilling(),
+                    isTillingTarget(level, player, event.getHand(), pos, tillingMode))) {
+                event.setCanceled(true);
+                return;
+            }
+
+            // Harvest mode keeps the hoe's harvest behavior, but deliberately suppresses
+            // the vanilla right-click till action on blocks that a hoe could till.
+            if (!tillingMode.allowsTilling()
+                    && isTillingTarget(level, player, event.getHand(), pos, HoeTillingMode.TILL)) {
+                event.setCanceled(true);
+                return;
+            }
+
+            if (tillingMode.allowsTilling() && !level.isClientSide()
+                    && isTillingTarget(level, player, event.getHand(), pos, tillingMode)) {
                 // Sneaking/crouching explicitly disables AoE: only ever till the clicked block.
                 if (sneaking) {
                     BlockState tilledState = resolveTilledState(level, player, event.getHand(), pos, tillingMode);
@@ -247,8 +304,8 @@ public class FarmTweaks {
                 boolean tilledAny = false;
                 int durabilityLimit = HoeOperationLimits.maxActions(Integer.MAX_VALUE, remainingDurability(tool), player.isCreative());
 
-                int sideLength = hoeSideLength(level, tool);
-                for (FootprintBoundary.Cell cell : HoeTillingArea.cells(pos.getX(), pos.getZ(), false, sideLength)) {
+                int radius = hoeTillingRadius(level, tool);
+                for (FootprintBoundary.Cell cell : HoeTillingArea.cells(pos.getX(), pos.getZ(), false, radius)) {
                     if (tilledCount >= durabilityLimit) {
                         break;
                     }
@@ -281,10 +338,24 @@ public class FarmTweaks {
                 event.setCanceled(true);
                 return;
             }
+
+            if (tillingMode == HoeTillingMode.UNTILL && !level.isClientSide()
+                    && isTillingTarget(level, player, event.getHand(), pos, HoeTillingMode.TILL)) {
+                event.setCanceled(true);
+                return;
+            }
         }
 
         // Branch 2: right-click harvest with auto-replant and optional AoE.
         if (level.isClientSide() || !Config.enableRightClickHarvest()) {
+            return;
+        }
+
+        if (harvestSugarCane((ServerLevel) level, player, event.getPos())
+                || harvestCocoa((ServerLevel) level, player, event.getHand(), tool, event.getPos())
+                || harvestSweetBerries((ServerLevel) level, player, event.getPos())) {
+            player.swing(event.getHand(), true);
+            event.setCanceled(true);
             return;
         }
 
@@ -397,7 +468,7 @@ public class FarmTweaks {
                     long k1 = n1.asLong();
                     if (!visited.contains(k1)) {
                         BlockState s1 = level.getBlockState(n1);
-                        if (cropLike(s1) != null) {
+                        if (isAoeHarvestCrop(s1)) {
                             visited.add(k1);
                             queue.addLast(n1);
                         }
@@ -410,7 +481,7 @@ public class FarmTweaks {
                         long k2 = n2.asLong();
                         if (!visited.contains(k2)) {
                             BlockState s2 = level.getBlockState(n2);
-                            if (isMatureCropLike(s2)) {
+                            if (isAoeHarvestCrop(s2) && isMatureCropLike(s2)) {
                                 visited.add(k2);
                                 queue.addLast(n2);
                             }
@@ -457,8 +528,7 @@ public class FarmTweaks {
         popHarvestDrops(serverLevel, pos, harvestState, player, toolForLoot, true);
 
         // Vanilla already applies Fortune to carrot- and potato-style crops. FarmTweaks adds its
-        // produce bonus only when the crop is replanted with a tagged seed item, or for cocoa,
-        // whose vanilla loot table has no Fortune function.
+        // produce bonus only when the crop is replanted with a tagged seed item.
         if (HarvestFortunePolicy.hasExtraBonus(
                 isSeedReplantingCrop(serverLevel, pos, harvestState, player),
                 harvestState.is(Blocks.COCOA),
@@ -515,9 +585,100 @@ public class FarmTweaks {
     }
 
     @SubscribeEvent
+    public void onHoeTooltip(ItemTooltipEvent event) {
+        if (!(event.getItemStack().getItem() instanceof HoeItem)) {
+            return;
+        }
+
+        HoeTillingMode mode = HoeModeData.read(event.getItemStack());
+        event.getToolTip().add(Math.min(1, event.getToolTip().size()),
+                Component.translatable(mode.translationKey()).withStyle(ChatFormatting.GRAY));
+    }
+
+    private static boolean harvestSugarCane(ServerLevel level, Player player, BlockPos clickedPos) {
+        if (!level.getBlockState(clickedPos).is(Blocks.SUGAR_CANE)) {
+            return false;
+        }
+
+        BlockPos base = clickedPos;
+        while (level.getBlockState(base.below()).is(Blocks.SUGAR_CANE)) {
+            base = base.below();
+        }
+
+        BlockPos top = clickedPos;
+        while (level.getBlockState(top.above()).is(Blocks.SUGAR_CANE)) {
+            top = top.above();
+        }
+
+        int firstHarvestY = Math.max(base.getY() + 1, clickedPos.getY());
+        if (SugarCaneHarvestPolicy.segmentCount(base.getY(), clickedPos.getY(), top.getY()) == 0) {
+            return false;
+        }
+
+        boolean harvested = false;
+        for (int y = firstHarvestY; y <= top.getY(); y++) {
+            BlockPos harvestPos = new BlockPos(clickedPos.getX(), y, clickedPos.getZ());
+            BlockState harvestState = level.getBlockState(harvestPos);
+            if (!fireSyntheticHarvestBreakEvent(level, player, harvestPos, harvestState)) {
+                continue;
+            }
+
+            level.setBlockAndUpdate(harvestPos, Blocks.AIR.defaultBlockState());
+            Block.popResource(level, harvestPos, new ItemStack(Items.SUGAR_CANE));
+            player.awardStat(Stats.BLOCK_MINED.get(Blocks.SUGAR_CANE));
+            awardHarvestExperience(level, harvestPos, 1);
+            harvested = true;
+        }
+        return harvested;
+    }
+
+    private static boolean harvestCocoa(
+            ServerLevel level, Player player, InteractionHand hand, ItemStack tool, BlockPos pos
+    ) {
+        BlockState state = level.getBlockState(pos);
+        if (!(state.getBlock() instanceof CocoaBlock)
+                || !VanillaHarvestCropAges.isMature(state.getValue(CocoaBlock.AGE), VanillaHarvestCropAges.COCOA_MAX_AGE)) {
+            return false;
+        }
+
+        BlockState resetState = state.setValue(CocoaBlock.AGE, 0);
+        if (!fireSyntheticHarvestBreakEvent(level, player, pos, state)
+                || !fireSyntheticReplantEvent(level, player, pos, state, resetState)) {
+            return false;
+        }
+
+        int totalYield = SpecialHarvestYieldPolicy.cocoaYield(level.random.nextInt(2));
+        Block.popResource(level, pos, new ItemStack(Items.COCOA_BEANS, totalYield - 1));
+        level.setBlockAndUpdate(pos, resetState);
+        player.awardStat(Stats.BLOCK_MINED.get(Blocks.COCOA));
+        applyHarvestCostsAndRewards(level, player, hand, pos, tool.getItem() instanceof HoeItem ? tool : ItemStack.EMPTY);
+        return true;
+    }
+
+    private static boolean harvestSweetBerries(ServerLevel level, Player player, BlockPos pos) {
+        BlockState state = level.getBlockState(pos);
+        if (!(state.getBlock() instanceof SweetBerryBushBlock)
+                || !SweetBerryHarvestPolicy.awardsExperience(state.getValue(SweetBerryBushBlock.AGE))) {
+            return false;
+        }
+
+        BlockState resetState = state.setValue(SweetBerryBushBlock.AGE, 1);
+        if (!fireSyntheticHarvestBreakEvent(level, player, pos, state)
+                || !fireSyntheticReplantEvent(level, player, pos, state, resetState)) {
+            return false;
+        }
+
+        Block.popResource(level, pos, new ItemStack(Items.SWEET_BERRIES, SpecialHarvestYieldPolicy.sweetBerryYield(level.random.nextInt(2))));
+        level.setBlockAndUpdate(pos, resetState);
+        player.awardStat(Stats.BLOCK_MINED.get(Blocks.SWEET_BERRY_BUSH));
+        awardHarvestExperience(level, pos, 1);
+        return true;
+    }
+
+    @SubscribeEvent
     public void onPumpkinBroken(BlockEvent.BreakEvent event) {
         if (event.isCanceled() || !(event.getLevel() instanceof ServerLevel level)
-                || !event.getState().is(Blocks.PUMPKIN)) {
+                || !event.getState().is(Blocks.PUMPKIN) || !PumpkinDropPolicy.useSlices(Config.enablePumpkinSlices())) {
             return;
         }
 
@@ -564,7 +725,11 @@ public class FarmTweaks {
         }
 
         // Reward a small amount of XP for each fully grown crop harvested.
-        int xp = Config.xpPerCrop();
+        awardHarvestExperience(level, pos, 1);
+    }
+
+    private static void awardHarvestExperience(Level level, BlockPos pos, int harvestedCount) {
+        int xp = HarvestExperiencePolicy.totalExperience(Config.xpPerCrop(), harvestedCount);
         if (xp > 0) {
             level.addFreshEntity(new ExperienceOrb(
                     level,
@@ -654,24 +819,29 @@ public class FarmTweaks {
         return Math.max(0, tool.getMaxDamage() - tool.getDamageValue());
     }
 
-    static int hoeSideLength(Level level, ItemStack tool) {
+    static int hoeTillingRadius(Level level, ItemStack tool) {
         if (!(tool.getItem() instanceof HoeItem hoe)) {
-            return 1;
+            return 0;
         }
-        return HoeRange.tillSideLength(hoeTierSideLength(hoe.getTier()));
+        return HoeRange.tillRadius(hoeTierRange(hoe.getTier()));
     }
 
-    private static int hoeTierSideLength(Tier tier) {
-        if (tier == Tiers.WOOD) return 1;
-        if (tier == Tiers.STONE) return 2;
-        if (tier == Tiers.IRON || tier == Tiers.GOLD) return 3;
-        if (tier == Tiers.DIAMOND) return 4;
-        if (tier == Tiers.NETHERITE) return 5;
-        return 1;
+    private static int hoeTierRange(Tier tier) {
+        HoeTillingTierSettings.Lengths ranges = Config.hoeTillingTierRanges();
+        if (tier == Tiers.WOOD) return ranges.wood();
+        if (tier == Tiers.STONE) return ranges.stone();
+        if (tier == Tiers.IRON || tier == Tiers.GOLD) return ranges.ironGold();
+        if (tier == Tiers.DIAMOND) return ranges.diamond();
+        if (tier == Tiers.NETHERITE) return ranges.netherite();
+        return 0;
     }
 
     static int efficiencyLevel(Level level, ItemStack tool) {
         return enchantmentLevel(level, tool, Enchantments.EFFICIENCY);
+    }
+
+    private static boolean isAoeHarvestCrop(BlockState state) {
+        return !state.is(Blocks.COCOA) && cropLike(state) != null;
     }
 
     private static int enchantmentLevel(Level level, ItemStack tool, ResourceKey<net.minecraft.world.item.enchantment.Enchantment> enchantment) {
@@ -682,7 +852,7 @@ public class FarmTweaks {
     }
 
     private static Item pumpkinSliceItem() {
-        return PumpkinSliceDrops.source(BuiltInRegistries.ITEM.containsKey(FARMERS_DELIGHT_PUMPKIN_SLICE))
+        return PumpkinSliceDrops.source(Config.preferCompatiblePumpkinSlice(), BuiltInRegistries.ITEM.containsKey(FARMERS_DELIGHT_PUMPKIN_SLICE))
                 == PumpkinSliceDrops.Source.FARMERS_DELIGHT
                 ? BuiltInRegistries.ITEM.get(FARMERS_DELIGHT_PUMPKIN_SLICE)
                 : PUMPKIN_SLICE.get();
@@ -718,7 +888,7 @@ public class FarmTweaks {
             BlockPos pos,
             HoeTillingMode mode
     ) {
-        return mode == HoeTillingMode.REVERT_TO_DIRT
+        return mode == HoeTillingMode.UNTILL
                 ? level.getBlockState(pos).is(Blocks.FARMLAND)
                 : hoeTilledState(level, player, hand, pos, true) != null;
     }
@@ -730,7 +900,7 @@ public class FarmTweaks {
             BlockPos pos,
             HoeTillingMode mode
     ) {
-        return mode == HoeTillingMode.REVERT_TO_DIRT
+        return mode == HoeTillingMode.UNTILL
                 ? Blocks.DIRT.defaultBlockState()
                 : hoeTilledState(level, player, hand, pos, false);
     }

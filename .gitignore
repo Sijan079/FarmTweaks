@@ -19,6 +19,7 @@ build
 .gradle-user
 
 # other
+AGENTS.md
 eclipse
 run
 runs

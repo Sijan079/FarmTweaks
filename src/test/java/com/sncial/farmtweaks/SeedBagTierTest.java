@@ -9,24 +9,25 @@ class SeedBagTierTest {
     @Test
     void tiers_define_their_storage_capacities_and_planting_radii() {
         assertEquals(4 * 64, SeedBagTier.BASIC.capacity());
-        assertEquals(0, SeedBagTier.BASIC.plantingRadius(false));
+        assertEquals(0, SeedBagTier.BASIC.plantingRadius(false, SeedBagAoeShape.SQUARE));
+        assertEquals(0, SeedBagTier.BASIC.plantingRadius(false, SeedBagAoeShape.RADIAL));
 
         assertEquals(9 * 64, SeedBagTier.GOLD.capacity());
-        assertEquals(1, SeedBagTier.GOLD.plantingRadius(false));
+        assertEquals(1, SeedBagTier.GOLD.plantingRadius(false, SeedBagAoeShape.SQUARE));
+        assertEquals(2, SeedBagTier.GOLD.plantingRadius(false, SeedBagAoeShape.RADIAL));
 
         assertEquals(18 * 64, SeedBagTier.DIAMOND.capacity());
-        assertEquals(2, SeedBagTier.DIAMOND.plantingRadius(false));
+        assertEquals(2, SeedBagTier.DIAMOND.plantingRadius(false, SeedBagAoeShape.SQUARE));
+        assertEquals(3, SeedBagTier.DIAMOND.plantingRadius(false, SeedBagAoeShape.RADIAL));
     }
 
     @Test
     void sneaking_reduces_every_tier_to_single_block_planting() {
-        assertEquals(0, SeedBagTier.BASIC.plantingRadius(true));
-        assertEquals(0, SeedBagTier.GOLD.plantingRadius(true));
-        assertEquals(0, SeedBagTier.DIAMOND.plantingRadius(true));
-
-        assertEquals(0, SeedBagTier.BASIC.plantingRadius(false));
-        assertEquals(1, SeedBagTier.GOLD.plantingRadius(false));
-        assertEquals(2, SeedBagTier.DIAMOND.plantingRadius(false));
+        for (SeedBagAoeShape shape : SeedBagAoeShape.values()) {
+            assertEquals(0, SeedBagTier.BASIC.plantingRadius(true, shape));
+            assertEquals(0, SeedBagTier.GOLD.plantingRadius(true, shape));
+            assertEquals(0, SeedBagTier.DIAMOND.plantingRadius(true, shape));
+        }
     }
 
     @Test

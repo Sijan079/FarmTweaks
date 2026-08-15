@@ -17,4 +17,9 @@ class PumpkinSliceDropsTest {
         assertEquals(PumpkinSliceDrops.Source.FARM_TWEAKS, PumpkinSliceDrops.source(false));
         assertEquals(PumpkinSliceDrops.Source.FARMERS_DELIGHT, PumpkinSliceDrops.source(true));
     }
+
+    @Test
+    void can_keep_farm_tweaks_slices_when_compatibility_is_disabled() {
+        assertEquals(PumpkinSliceDrops.Source.FARM_TWEAKS, PumpkinSliceDrops.source(false, true));
+    }
 }

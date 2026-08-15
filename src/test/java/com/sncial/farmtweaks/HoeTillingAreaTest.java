@@ -1,6 +1,7 @@
 package com.sncial.farmtweaks;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
@@ -8,7 +9,7 @@ import org.junit.jupiter.api.Test;
 class HoeTillingAreaTest {
     @Test
     void normal_hoe_use_targets_the_requested_square_area() {
-        var cells = HoeTillingArea.cells(10, 20, false, 5);
+        var cells = HoeTillingArea.cells(10, 20, false, 2);
 
         assertEquals(25, cells.size());
         assertTrue(cells.contains(new FootprintBoundary.Cell(8, 18)));
@@ -21,13 +22,13 @@ class HoeTillingAreaTest {
     }
 
     @Test
-    void even_sized_areas_start_at_the_clicked_block_or_one_block_before_it() {
-        var stone = HoeTillingArea.cells(10, 20, false, 2);
-        var diamond = HoeTillingArea.cells(10, 20, false, 4);
+    void one_added_ring_is_centered_on_the_clicked_block() {
+        var cells = HoeTillingArea.cells(10, 20, false, 1);
 
-        assertTrue(stone.contains(new FootprintBoundary.Cell(10, 20)));
-        assertTrue(stone.contains(new FootprintBoundary.Cell(11, 21)));
-        assertTrue(diamond.contains(new FootprintBoundary.Cell(9, 19)));
-        assertTrue(diamond.contains(new FootprintBoundary.Cell(12, 22)));
+        assertEquals(9, cells.size());
+        assertTrue(cells.contains(new FootprintBoundary.Cell(9, 19)));
+        assertTrue(cells.contains(new FootprintBoundary.Cell(10, 20)));
+        assertTrue(cells.contains(new FootprintBoundary.Cell(11, 21)));
+        assertFalse(cells.contains(new FootprintBoundary.Cell(12, 22)));
     }
 }

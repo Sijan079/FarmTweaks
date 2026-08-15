@@ -34,6 +34,7 @@ public class SeedBagItem extends Item {
     private static final String NBT_ROOT = "farmtweaks";
     private static final String NBT_SEED_STACK = "seedStack";
     private static final String NBT_COUNT = "count";
+    private static final String NBT_PLANTING_SHAPE = "plantingShape";
 
     private final SeedBagTier tier;
 
@@ -60,6 +61,22 @@ public class SeedBagItem extends Item {
         return tier;
     }
 
+    static SeedBagAoeShape plantingShape(ItemStack bag) {
+        CompoundTag root = getRootTag(bag);
+        if (!root.contains(NBT_PLANTING_SHAPE)) {
+            return Config.seedBagAoeShape();
+        }
+        return SeedBagAoeShape.fromConfig(root.getString(NBT_PLANTING_SHAPE));
+    }
+
+    static SeedBagAoeShape cyclePlantingShape(ItemStack bag, boolean forward) {
+        SeedBagAoeShape shape = plantingShape(bag).cycle(forward);
+        CompoundTag root = getRootTag(bag);
+        root.putString(NBT_PLANTING_SHAPE, shape.name());
+        setRootTag(bag, root);
+        return shape;
+    }
+
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         if (!Config.enableSeedBags()) {
@@ -67,6 +84,7 @@ public class SeedBagItem extends Item {
             return;
         }
 
+        tooltip.add(Component.translatable(plantingShape(stack).translationKey()).withStyle(ChatFormatting.GRAY));
         SeedBagData data = read(stack);
         if (data.seedPrototype.isEmpty() || data.count <= 0) {
             tooltip.add(Component.literal("Empty").withStyle(ChatFormatting.GRAY));
@@ -117,8 +135,9 @@ public class SeedBagItem extends Item {
             return InteractionResult.CONSUME;
         }
 
-        int radius = tier.plantingRadius(player.isShiftKeyDown());
-        int planted = plantArea(serverLevel, player, context.getHand(), context.getClickedPos(), context.getItemInHand(), radius);
+        SeedBagAoeShape shape = plantingShape(context.getItemInHand());
+        int radius = tier.plantingRadius(player.isShiftKeyDown(), shape);
+        int planted = plantArea(serverLevel, player, context.getHand(), context.getClickedPos(), context.getItemInHand(), radius, shape);
         if (planted > 0) {
             player.swing(context.getHand(), true);
             return InteractionResult.SUCCESS;
@@ -222,7 +241,7 @@ public class SeedBagItem extends Item {
         return true;
     }
 
-    private int plantArea(ServerLevel level, Player player, InteractionHand hand, BlockPos clickedPos, ItemStack bag, int radius) {
+    private int plantArea(ServerLevel level, Player player, InteractionHand hand, BlockPos clickedPos, ItemStack bag, int radius, SeedBagAoeShape shape) {
         SeedBagData data = read(bag);
         ItemStack seedProto = data.seedPrototype;
         if (seedProto.isEmpty() || data.count <= 0) {
@@ -233,7 +252,7 @@ public class SeedBagItem extends Item {
 
         for (int dx = -radius; dx <= radius && data.count > 0; dx++) {
             for (int dz = -radius; dz <= radius && data.count > 0; dz++) {
-                if (!Config.seedBagAoeShape().includes(dx, dz, radius)) {
+                if (!shape.includes(dx, dz, radius)) {
                     continue;
                 }
 
@@ -287,9 +306,10 @@ public class SeedBagItem extends Item {
     }
 
     private void write(ItemStack bag, SeedBagData data) {
-        CompoundTag root = new CompoundTag();
+        CompoundTag root = getRootTag(bag);
         int count = clampCount(data.count);
         root.putInt(NBT_COUNT, count);
+        root.remove(NBT_SEED_STACK);
 
         // If empty, clear the stored seed type so the bag can accept a new one.
         if (count > 0 && !data.seedPrototype.isEmpty()) {

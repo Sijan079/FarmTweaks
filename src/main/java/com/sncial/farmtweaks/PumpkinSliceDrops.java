@@ -15,4 +15,8 @@ final class PumpkinSliceDrops {
     static Source source(boolean farmersDelightAvailable) {
         return farmersDelightAvailable ? Source.FARMERS_DELIGHT : Source.FARM_TWEAKS;
     }
+
+    static Source source(boolean preferCompatibleSlice, boolean farmersDelightAvailable) {
+        return preferCompatibleSlice && farmersDelightAvailable ? Source.FARMERS_DELIGHT : Source.FARM_TWEAKS;
+    }
 }

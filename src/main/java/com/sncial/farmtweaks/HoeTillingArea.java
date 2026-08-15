@@ -6,12 +6,11 @@ import java.util.Set;
 final class HoeTillingArea {
     private HoeTillingArea() {}
 
-    static Set<FootprintBoundary.Cell> cells(int centerX, int centerZ, boolean sneaking, int sideLength) {
+    static Set<FootprintBoundary.Cell> cells(int centerX, int centerZ, boolean sneaking, int radius) {
         Set<FootprintBoundary.Cell> cells = new LinkedHashSet<>();
-        int size = sneaking ? 1 : Math.max(1, sideLength);
-        int startOffset = -((size - 1) / 2);
-        for (int dx = startOffset; dx < startOffset + size; dx++) {
-            for (int dz = startOffset; dz < startOffset + size; dz++) {
+        int resolvedRadius = sneaking ? 0 : Math.max(0, radius);
+        for (int dx = -resolvedRadius; dx <= resolvedRadius; dx++) {
+            for (int dz = -resolvedRadius; dz <= resolvedRadius; dz++) {
                 cells.add(new FootprintBoundary.Cell(centerX + dx, centerZ + dz));
             }
         }

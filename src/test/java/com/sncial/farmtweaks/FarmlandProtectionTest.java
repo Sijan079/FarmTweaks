@@ -1,12 +1,14 @@
 package com.sncial.farmtweaks;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
 class FarmlandProtectionTest {
     @Test
-    void cancels_entity_trampling_without_affecting_other_farmland_reversion_rules() {
-        assertTrue(FarmlandProtection.cancelTrample());
+    void cancels_trampling_only_when_protection_is_enabled() {
+        assertTrue(FarmlandProtection.cancelTrample(true));
+        assertFalse(FarmlandProtection.cancelTrample(false));
     }
 }

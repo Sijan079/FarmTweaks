@@ -4,7 +4,8 @@
   "package": "com.sncial.farmtweaks.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
-    "FarmBlockHydrationMixin"
+    "FarmBlockHydrationMixin",
+    "HoeMineableTagMixin"
   ],
   "injectors": {
     "defaultRequire": 1
